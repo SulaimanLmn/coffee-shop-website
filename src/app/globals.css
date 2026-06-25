@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme {
+  /* Warm coffee palette — semantic tokens */
+  --color-cream: #faf6f0;
+  --color-foam: #f3ece2;
+  --color-latte: #e7d8c9;
+  --color-caramel: #b87333;
+  --color-caramel-dark: #9c5f26;
+  --color-coffee: #6b4423;
+  --color-espresso: #2a1a11;
+  --color-mocha: #6b5b4e;
+
+  /* Typefaces */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+}
+
+:root {
+  --background: var(--color-cream);
+  --foreground: var(--color-espresso);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "kern" 1;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-caramel);
+  color: #fff;
+}
+
+/* Subtle steam drift for the hero */
+@keyframes steam {
+  0% {
+    transform: translateY(0) scaleX(1);
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-28px) scaleX(1.6);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
