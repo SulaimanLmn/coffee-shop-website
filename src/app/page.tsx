@@ -1,5 +1,7 @@
 import Image from "next/image";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { CATEGORIES } from "@/lib/catalog";
 import { ProductCard } from "@/components/product-card";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +41,7 @@ export default async function Home() {
                 Shop the menu
               </a>
               <a
-                href="#menu"
+                href="#categories"
                 className="inline-flex items-center justify-center rounded-full border border-cream/25 px-6 py-3 text-sm font-semibold text-cream transition-colors hover:border-cream/60"
               >
                 Explore the range
@@ -82,15 +84,50 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Categories */}
+      <section
+        id="categories"
+        className="mx-auto max-w-6xl scroll-mt-20 px-4 py-14 sm:px-6"
+      >
+        <h2 className="font-display text-2xl font-semibold tracking-tight text-espresso">
+          Browse by category
+        </h2>
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {CATEGORIES.map((cat) => {
+            const count = products.filter((p) => p.category === cat.slug).length;
+            return (
+              <Link
+                key={cat.slug}
+                href={`/category/${cat.slug}`}
+                className="group rounded-2xl border border-latte bg-white p-6 transition-colors hover:border-caramel"
+              >
+                <p className="font-display text-xl font-semibold text-espresso group-hover:text-caramel">
+                  {cat.label}
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-mocha">
+                  {cat.blurb}
+                </p>
+                <p className="mt-4 text-xs font-medium uppercase tracking-[0.12em] text-caramel-dark">
+                  {count} {count === 1 ? "item" : "items"} →
+                </p>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
       {/* Menu */}
-      <section id="menu" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6 lg:py-20">
+      <section
+        id="menu"
+        className="mx-auto max-w-6xl scroll-mt-20 px-4 pb-20 sm:px-6"
+      >
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="font-display text-3xl font-semibold tracking-tight text-espresso sm:text-4xl">
               The menu
             </h2>
             <p className="mt-2 text-sm text-mocha">
-              Six favorites, roasted fresh and ready to ship.
+              Roasted fresh and ready to ship.
             </p>
           </div>
         </div>

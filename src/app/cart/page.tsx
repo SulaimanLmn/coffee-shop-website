@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useCart, useCartTotal } from "@/lib/cart-store";
 import { useHydrated } from "@/lib/use-hydrated";
 import { formatPrice } from "@/lib/format";
+import { shippingFor, grandTotal } from "@/lib/pricing";
 
 export default function CartPage() {
   const hydrated = useHydrated();
@@ -162,7 +163,7 @@ export default function CartPage() {
             <div className="flex items-center justify-between">
               <dt className="text-mocha">Shipping</dt>
               <dd className="font-medium tabular-nums text-espresso">
-                {total >= 4000 ? "Free" : formatPrice(500)}
+                {shippingFor(total) === 0 ? "Free" : formatPrice(shippingFor(total))}
               </dd>
             </div>
           </dl>
@@ -171,7 +172,7 @@ export default function CartPage() {
               Total
             </span>
             <span className="font-display text-xl font-semibold tabular-nums text-espresso">
-              {formatPrice(total + (total >= 4000 ? 0 : 500))}
+              {formatPrice(grandTotal(total))}
             </span>
           </div>
 

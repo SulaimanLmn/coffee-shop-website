@@ -1,11 +1,15 @@
 import Image from "next/image";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/format";
 import { isAdmin } from "@/lib/admin";
+import { asOrderStatus, categoryLabel } from "@/lib/catalog";
 import { logoutAction } from "./actions";
 import { LoginForm } from "@/components/admin/login-form";
 import { ProductForm } from "@/components/admin/product-form";
 import { DeleteProductButton } from "@/components/admin/delete-product-button";
+import { StatusBadge } from "@/components/order-status";
+import { SalesChart, TopProductsChart } from "@/components/admin/charts";
 
 export const dynamic = "force-dynamic";
 
@@ -35,12 +39,34 @@ export default async function AdminPage({
     return <LoginForm hasError={error === "1"} />;
   }
 
-  const [products, orders] = await Promise.all([
+  const [
+    products,
+    recentOrders,
+    orderCount,
+    revenueAgg,
+    lowStock,
+    topItems,
+  ] = await Promise.all([
     prisma.product.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.order.findMany({
       orderBy: { createdAt: "desc" },
       include: { items: true },
-      take: 50,
+      take: 20,
+    }),
+    prisma.order.count({ where: { status: { not: "CANCELLED" } } }),
+    prisma.order.aggregate({
+      _sum: { amount: true },
+      where: { status: { not: "CANCELLED" } },
+    }),
+    prisma.product.findMany({
+      where: { stock: { lte: 5 } },
+      orderBy: { stock: "asc" },
+    }),
+    prisma.orderItem.groupBy({
+      by: ["productId"],
+      _sum: { quantity: true },
+      orderBy: { _sum: { quantity: "desc" } },
+      take: 5,
     }),
   ]);
 
@@ -48,9 +74,41 @@ export default async function AdminPage({
     ? products.find((p) => p.id === editId) ?? null
     : null;
 
-  const totalRevenue = orders
-    .filter((o) => o.status === "PAID")
-    .reduce((sum, o) => sum + o.amount, 0);
+  const totalRevenue = revenueAgg._sum.amount ?? 0;
+
+  // Sales over the last 14 days
+  const dayMap = new Map<string, number>();
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    dayMap.set(d.toISOString().slice(0, 10), 0);
+  }
+  const since = new Date();
+  since.setDate(since.getDate() - 13);
+  since.setHours(0, 0, 0, 0);
+  const salesOrders = await prisma.order.findMany({
+    where: { createdAt: { gte: since }, status: { not: "CANCELLED" } },
+    select: { createdAt: true, amount: true },
+  });
+  for (const o of salesOrders) {
+    const key = o.createdAt.toISOString().slice(0, 10);
+    dayMap.set(key, (dayMap.get(key) ?? 0) + o.amount);
+  }
+  const salesData = [...dayMap.entries()].map(([key, cents]) => ({
+    label: key.slice(5),
+    cents,
+  }));
+
+  // Top products
+  const topProductIds = topItems.map((t) => t.productId);
+  const topProducts = await prisma.product.findMany({
+    where: { id: { in: topProductIds } },
+    select: { id: true, name: true },
+  });
+  const topData = topItems.map((t) => ({
+    name: topProducts.find((p) => p.id === t.productId)?.name ?? "Unknown",
+    units: t._sum.quantity ?? 0,
+  }));
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:py-16">
@@ -61,7 +119,7 @@ export default async function AdminPage({
             Admin dashboard
           </h1>
           <p className="mt-1 text-sm text-mocha">
-            Manage products and review recent orders.
+            Manage products, fulfil orders, and review sales.
           </p>
         </div>
         <form action={logoutAction}>
@@ -98,7 +156,7 @@ export default async function AdminPage({
       )}
 
       {/* Stats */}
-      <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <section className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="rounded-2xl border border-latte bg-white p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-caramel-dark">
             Products
@@ -112,7 +170,7 @@ export default async function AdminPage({
             Orders
           </p>
           <p className="mt-2 font-display text-2xl font-semibold tabular-nums text-espresso">
-            {orders.length}
+            {orderCount}
           </p>
         </div>
         <div className="rounded-2xl border border-latte bg-white p-5">
@@ -123,7 +181,57 @@ export default async function AdminPage({
             {formatPrice(totalRevenue)}
           </p>
         </div>
+        <div className="rounded-2xl border border-latte bg-white p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-caramel-dark">
+            Low stock
+          </p>
+          <p className="mt-2 font-display text-2xl font-semibold tabular-nums text-espresso">
+            {lowStock.length}
+          </p>
+        </div>
       </section>
+
+      {/* Charts */}
+      <section className="mt-6 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+        <div className="rounded-2xl border border-latte bg-white p-5">
+          <h2 className="font-display text-lg font-semibold text-espresso">
+            Revenue · last 14 days
+          </h2>
+          <div className="mt-4">
+            <SalesChart data={salesData} />
+          </div>
+        </div>
+        <div className="rounded-2xl border border-latte bg-white p-5">
+          <h2 className="font-display text-lg font-semibold text-espresso">
+            Top sellers
+          </h2>
+          <div className="mt-4">
+            <TopProductsChart data={topData} />
+          </div>
+        </div>
+      </section>
+
+      {/* Low-stock alerts */}
+      {lowStock.length > 0 && (
+        <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <h2 className="font-display text-base font-semibold text-amber-900">
+            Low-stock alerts
+          </h2>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {lowStock.map((p) => (
+              <li
+                key={p.id}
+                className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-white px-3 py-1 text-sm text-amber-900"
+              >
+                <span className="font-medium">{p.name}</span>
+                <span className="tabular-nums">
+                  {p.stock === 0 ? "sold out" : `${p.stock} left`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Products + form */}
       <section className="mt-12 grid gap-8 lg:grid-cols-[1fr_380px]">
@@ -131,11 +239,12 @@ export default async function AdminPage({
           <h2 className="font-display text-xl font-semibold text-espresso">
             Products
           </h2>
-          <div className="mt-4 overflow-hidden rounded-2xl border border-latte bg-white">
+          <div className="mt-4 overflow-x-auto rounded-2xl border border-latte bg-white">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-latte bg-foam text-xs uppercase tracking-[0.08em] text-mocha">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Product</th>
+                  <th className="px-4 py-3 font-semibold">Category</th>
                   <th className="px-4 py-3 text-right font-semibold">Price</th>
                   <th className="px-4 py-3 text-right font-semibold">Stock</th>
                   <th className="px-4 py-3 text-right font-semibold">Actions</th>
@@ -160,11 +269,20 @@ export default async function AdminPage({
                         </span>
                       </div>
                     </td>
+                    <td className="px-4 py-3 text-mocha">
+                      {categoryLabel(product.category)}
+                    </td>
                     <td className="px-4 py-3 text-right tabular-nums text-espresso">
                       {formatPrice(product.price)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-mocha">
-                      {product.stock}
+                      <span
+                        className={
+                          product.stock <= 5 ? "font-semibold text-amber-700" : ""
+                        }
+                      >
+                        {product.stock}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-3">
@@ -185,7 +303,7 @@ export default async function AdminPage({
                 {products.length === 0 && (
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={5}
                       className="px-4 py-10 text-center text-mocha"
                     >
                       No products yet. Add your first one.
@@ -232,7 +350,7 @@ export default async function AdminPage({
         <h2 className="font-display text-xl font-semibold text-espresso">
           Recent orders
         </h2>
-        <div className="mt-4 overflow-hidden rounded-2xl border border-latte bg-white">
+        <div className="mt-4 overflow-x-auto rounded-2xl border border-latte bg-white">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-latte bg-foam text-xs uppercase tracking-[0.08em] text-mocha">
               <tr>
@@ -241,10 +359,11 @@ export default async function AdminPage({
                 <th className="px-4 py-3 text-right font-semibold">Items</th>
                 <th className="px-4 py-3 text-right font-semibold">Amount</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-latte">
-              {orders.map((order) => (
+              {recentOrders.map((order) => (
                 <tr key={order.id}>
                   <td className="whitespace-nowrap px-4 py-3 text-mocha">
                     {formatDate(order.createdAt)}
@@ -259,22 +378,22 @@ export default async function AdminPage({
                     {formatPrice(order.amount)}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={
-                        order.status === "PAID"
-                          ? "inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800"
-                          : "inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800"
-                      }
+                    <StatusBadge status={asOrderStatus(order.status)} />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link
+                      href={`/admin/orders/${order.id}`}
+                      className="text-sm font-medium text-caramel-dark hover:text-espresso"
                     >
-                      {order.status}
-                    </span>
+                      Manage
+                    </Link>
                   </td>
                 </tr>
               ))}
-              {orders.length === 0 && (
+              {recentOrders.length === 0 && (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-10 text-center text-mocha"
                   >
                     No orders yet. They&apos;ll appear here after the first
@@ -285,6 +404,11 @@ export default async function AdminPage({
             </tbody>
           </table>
         </div>
+        {orderCount > recentOrders.length && (
+          <p className="mt-3 text-sm text-mocha">
+            Showing {recentOrders.length} of {orderCount} orders.
+          </p>
+        )}
       </section>
     </div>
   );

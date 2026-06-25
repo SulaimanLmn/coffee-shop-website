@@ -4,11 +4,18 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { toCents } from "@/lib/pricing";
 import {
   assertAdmin,
   createAdminSession,
   clearAdminSession,
 } from "@/lib/admin";
+import {
+  asOrderStatus,
+  nextStatus,
+  statusTimestampField,
+  isCategorySlug,
+} from "@/lib/catalog";
 
 export async function loginAction(formData: FormData) {
   const password = formData.get("password");
@@ -35,26 +42,55 @@ function parseDollars(value: FormDataEntryValue | null): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-export async function createProductAction(formData: FormData) {
-  await assertAdmin();
+function parseStock(value: FormDataEntryValue | null): number {
+  const n = parseInt(String(value ?? "0"), 10);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+}
 
+function optionalString(value: FormDataEntryValue | null): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function productDataFromForm(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const imageUrl = String(formData.get("imageUrl") ?? "").trim();
   const priceDollars = parseDollars(formData.get("price"));
-  const stock = parseInt(String(formData.get("stock") ?? "0"), 10);
+  const category = String(formData.get("category") ?? "beans").trim();
+  const roastLevel = optionalString(formData.get("roastLevel"));
+  const origin = optionalString(formData.get("origin"));
 
-  if (!name || !description || !imageUrl || priceDollars === null) {
+  return {
+    name,
+    description,
+    imageUrl,
+    priceDollars,
+    category: isCategorySlug(category) ? category : "beans",
+    roastLevel,
+    origin,
+  };
+}
+
+export async function createProductAction(formData: FormData) {
+  await assertAdmin();
+
+  const data = productDataFromForm(formData);
+  if (!data.name || !data.description || !data.imageUrl || data.priceDollars === null) {
     redirect("/admin?error=invalid");
   }
 
   await prisma.product.create({
     data: {
-      name,
-      description,
-      imageUrl,
-      price: Math.round(priceDollars! * 100),
-      stock: Number.isFinite(stock) && stock >= 0 ? stock : 0,
+      name: data.name,
+      description: data.description,
+      imageUrl: data.imageUrl,
+      price: toCents(data.priceDollars!),
+      stock: parseStock(formData.get("stock")),
+      category: data.category,
+      roastLevel: data.roastLevel,
+      origin: data.origin,
     },
   });
 
@@ -67,24 +103,22 @@ export async function updateProductAction(formData: FormData) {
   await assertAdmin();
 
   const id = String(formData.get("id") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
-  const imageUrl = String(formData.get("imageUrl") ?? "").trim();
-  const priceDollars = parseDollars(formData.get("price"));
-  const stock = parseInt(String(formData.get("stock") ?? "0"), 10);
-
-  if (!id || !name || !description || !imageUrl || priceDollars === null) {
+  const data = productDataFromForm(formData);
+  if (!id || !data.name || !data.description || !data.imageUrl || data.priceDollars === null) {
     redirect("/admin?error=invalid");
   }
 
   await prisma.product.update({
     where: { id },
     data: {
-      name,
-      description,
-      imageUrl,
-      price: Math.round(priceDollars! * 100),
-      stock: Number.isFinite(stock) && stock >= 0 ? stock : 0,
+      name: data.name,
+      description: data.description,
+      imageUrl: data.imageUrl,
+      price: toCents(data.priceDollars!),
+      stock: parseStock(formData.get("stock")),
+      category: data.category,
+      roastLevel: data.roastLevel,
+      origin: data.origin,
     },
   });
 
@@ -114,4 +148,67 @@ export async function deleteProductAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/");
   redirect("/admin?deleted=1");
+}
+
+export async function advanceOrderStatusAction(formData: FormData) {
+  await assertAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) redirect("/admin");
+
+  const order = await prisma.order.findUnique({ where: { id } });
+  if (!order) redirect("/admin");
+
+  const current = asOrderStatus(order.status);
+  const next = nextStatus(current);
+  if (!next) redirect(`/admin/orders/${id}`);
+
+  const timestampField = statusTimestampField(next);
+  await prisma.order.update({
+    where: { id },
+    data: {
+      status: next,
+      ...(timestampField ? { [timestampField]: new Date() } : {}),
+    },
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/orders/" + id);
+  revalidatePath("/account");
+  redirect(`/admin/orders/${id}`);
+}
+
+export async function cancelOrderAction(formData: FormData) {
+  await assertAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) redirect("/admin");
+
+  await prisma.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({
+      where: { id },
+      include: { items: true },
+    });
+    if (!order || order.status === "CANCELLED") return;
+
+    const wasPaid = order.status !== "PENDING";
+    if (wasPaid) {
+      for (const item of order.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { increment: item.quantity } },
+        });
+      }
+    }
+
+    await tx.order.update({
+      where: { id },
+      data: { status: "CANCELLED" },
+    });
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/orders/" + id);
+  revalidatePath("/account");
+  redirect(`/admin/orders/${id}`);
 }

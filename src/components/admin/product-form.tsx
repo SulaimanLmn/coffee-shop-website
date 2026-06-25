@@ -2,6 +2,7 @@ import {
   createProductAction,
   updateProductAction,
 } from "@/app/admin/actions";
+import { CATEGORIES, ROAST_LEVELS } from "@/lib/catalog";
 
 type Props = {
   product?: {
@@ -11,8 +12,14 @@ type Props = {
     price: number;
     imageUrl: string;
     stock: number;
+    category: string;
+    roastLevel: string | null;
+    origin: string | null;
   };
 };
+
+const inputClass =
+  "w-full rounded-lg border border-latte bg-white px-3 py-2 text-sm text-espresso outline-none transition-colors focus:border-caramel";
 
 export function ProductForm({ product }: Props) {
   const action = product ? updateProductAction : createProductAction;
@@ -29,7 +36,7 @@ export function ProductForm({ product }: Props) {
           required
           maxLength={80}
           placeholder="Espresso Origin"
-          className="w-full rounded-lg border border-latte bg-white px-3 py-2 text-sm text-espresso outline-none transition-colors focus:border-caramel"
+          className={inputClass}
         />
       </label>
 
@@ -42,7 +49,7 @@ export function ProductForm({ product }: Props) {
           maxLength={280}
           rows={3}
           placeholder="Single-origin beans, roasted medium-dark…"
-          className="w-full resize-none rounded-lg border border-latte bg-white px-3 py-2 text-sm leading-relaxed text-espresso outline-none transition-colors focus:border-caramel"
+          className={`${inputClass} resize-none leading-relaxed`}
         />
       </label>
 
@@ -54,9 +61,55 @@ export function ProductForm({ product }: Props) {
           defaultValue={product?.imageUrl ?? ""}
           required
           placeholder="https://images.unsplash.com/…"
-          className="w-full rounded-lg border border-latte bg-white px-3 py-2 text-sm text-espresso outline-none transition-colors focus:border-caramel"
+          className={inputClass}
         />
       </label>
+
+      <label className="grid gap-1.5">
+        <span className="text-sm font-medium text-espresso">Category</span>
+        <select
+          name="category"
+          defaultValue={product?.category ?? "beans"}
+          className={inputClass}
+        >
+          {CATEGORIES.map((c) => (
+            <option key={c.slug} value={c.slug}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div className="grid grid-cols-2 gap-4">
+        <label className="grid gap-1.5">
+          <span className="text-sm font-medium text-espresso">
+            Roast level
+          </span>
+          <select
+            name="roastLevel"
+            defaultValue={product?.roastLevel ?? ""}
+            className={inputClass}
+          >
+            <option value="">— None —</option>
+            {ROAST_LEVELS.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="grid gap-1.5">
+          <span className="text-sm font-medium text-espresso">Origin</span>
+          <input
+            name="origin"
+            defaultValue={product?.origin ?? ""}
+            maxLength={40}
+            placeholder="Ethiopia"
+            className={inputClass}
+          />
+        </label>
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         <label className="grid gap-1.5">
@@ -68,12 +121,10 @@ export function ProductForm({ product }: Props) {
             type="number"
             step="0.01"
             min="0"
-            defaultValue={
-              product ? (product.price / 100).toFixed(2) : ""
-            }
+            defaultValue={product ? (product.price / 100).toFixed(2) : ""}
             required
             placeholder="12.00"
-            className="w-full rounded-lg border border-latte bg-white px-3 py-2 text-sm tabular-nums text-espresso outline-none transition-colors focus:border-caramel"
+            className={`${inputClass} tabular-nums`}
           />
         </label>
 
@@ -87,7 +138,7 @@ export function ProductForm({ product }: Props) {
             defaultValue={product?.stock ?? 0}
             required
             placeholder="40"
-            className="w-full rounded-lg border border-latte bg-white px-3 py-2 text-sm tabular-nums text-espresso outline-none transition-colors focus:border-caramel"
+            className={`${inputClass} tabular-nums`}
           />
         </label>
       </div>

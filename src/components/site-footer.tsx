@@ -20,8 +20,8 @@ export function SiteFooter() {
           <Link href="/cart" className="hover:text-espresso">
             Cart
           </Link>
-          <Link href="/admin" className="hover:text-espresso">
-            Admin
+          <Link href="/account" className="hover:text-espresso">
+            Account
           </Link>
         </nav>
       </div>

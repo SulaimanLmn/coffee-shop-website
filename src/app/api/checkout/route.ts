@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
+import { getCurrentCustomerId } from "@/lib/auth";
+import { shippingFor } from "@/lib/pricing";
 
 type CheckoutItem = { id: string; quantity: number };
 
@@ -28,6 +31,7 @@ export async function POST(request: Request) {
       typeof item.id !== "string" ||
       typeof item.quantity !== "number" ||
       !Number.isFinite(item.quantity) ||
+      !Number.isInteger(item.quantity) ||
       item.quantity <= 0
     ) {
       return NextResponse.json(
@@ -53,18 +57,51 @@ export async function POST(request: Request) {
     );
   }
 
-  const lineItems = products.map((product) => ({
-    quantity: quantities.get(product.id)!,
-    price_data: {
-      currency: "usd",
-      unit_amount: product.price,
-      product_data: {
-        name: product.name,
-        images: [product.imageUrl],
-        metadata: { productId: product.id },
+  for (const product of products) {
+    const want = quantities.get(product.id)!;
+    if (product.stock < want) {
+      return NextResponse.json(
+        {
+          error: `Sorry, only ${product.stock} × ${product.name} are in stock.`,
+        },
+        { status: 409 }
+      );
+    }
+  }
+
+  const subtotalCents = products.reduce(
+    (sum, p) => sum + p.price * quantities.get(p.id)!,
+    0
+  );
+  const shippingCents = shippingFor(subtotalCents);
+
+  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = products.map(
+    (product) => ({
+      quantity: quantities.get(product.id)!,
+      price_data: {
+        currency: "usd",
+        unit_amount: product.price,
+        product_data: {
+          name: product.name,
+          images: [product.imageUrl],
+          metadata: { productId: product.id },
+        },
       },
-    },
-  }));
+    })
+  );
+
+  if (shippingCents > 0) {
+    lineItems.push({
+      quantity: 1,
+      price_data: {
+        currency: "usd",
+        unit_amount: shippingCents,
+        product_data: {
+          name: "Shipping",
+        },
+      },
+    });
+  }
 
   const cartForWebhook = products.map((product) => ({
     id: product.id,
@@ -72,6 +109,7 @@ export async function POST(request: Request) {
     price: product.price,
   }));
 
+  const customerId = await getCurrentCustomerId();
   const origin = process.env.APP_URL ?? new URL(request.url).origin;
 
   let session;
@@ -81,7 +119,11 @@ export async function POST(request: Request) {
       line_items: lineItems,
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/cart`,
-      metadata: { cart: JSON.stringify(cartForWebhook) },
+      shipping_address_collection: { allowed_countries: ["US", "CA", "GB"] },
+      metadata: {
+        cart: JSON.stringify(cartForWebhook),
+        customerId: customerId ?? "",
+      },
     });
   } catch (error) {
     console.error("Stripe checkout error:", error);
