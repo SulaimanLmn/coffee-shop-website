@@ -57,8 +57,7 @@ export default function CartPage() {
           Your cart is empty
         </h1>
         <p className="mx-auto mt-3 max-w-md text-sm text-mocha">
-          Browse the menu and add a few bags of freshly roasted coffee to get
-          started.
+          Browse the menu and add a few drinks and treats to get started.
         </p>
         <Link
           href="/"
@@ -197,7 +196,7 @@ export default function CartPage() {
             href="/"
             className="mt-4 block text-center text-sm font-medium text-mocha transition-colors hover:text-espresso"
           >
-            Continue shopping
+            Back to menu
           </Link>
         </aside>
       </div>

@@ -7,9 +7,9 @@ import { ProductCard } from "@/components/product-card";
 export const dynamic = "force-dynamic";
 
 const features = [
-  { label: "Roasted to order", value: "Within 48 hours of shipping" },
-  { label: "Free shipping", value: "On every order over $40" },
-  { label: "Single-origin", value: "Ethically sourced beans" },
+  { label: "Made to order", value: "Pulled fresh when you order" },
+  { label: "Baked daily", value: "Pastries in-house every morning" },
+  { label: "Open 7 days", value: "Mon–Sun · 7am to 6pm" },
 ];
 
 export default async function Home() {
@@ -24,21 +24,21 @@ export default async function Home() {
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:py-24">
           <div className="max-w-xl">
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-caramel">
-              Roasted to order
+              Made fresh, served warm
             </p>
             <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-              Coffee worth slowing down for.
+              Your daily cup, done right.
             </h1>
             <p className="mt-5 text-base leading-relaxed text-cream/75 sm:text-lg">
-              Single-origin beans, slow-steeped cold brew, and velvety lattes —
-              roasted in small batches and shipped the day they&apos;re ready.
+              Espresso pulled to order, cold brew steeped slow, and pastries
+              baked in-house each morning. Order ahead and skip the wait.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <a
                 href="#menu"
                 className="inline-flex items-center justify-center rounded-full bg-caramel px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-caramel-dark"
               >
-                Shop the menu
+                View the menu
               </a>
               <a
                 href="#categories"
@@ -64,7 +64,7 @@ export default async function Home() {
               <p className="font-display text-2xl font-semibold tabular-nums">
                 4.9
               </p>
-              <p className="text-xs text-mocha">2,300+ cups shipped</p>
+              <p className="text-xs text-mocha">2,300+ cups poured</p>
             </div>
           </div>
         </div>
@@ -90,24 +90,24 @@ export default async function Home() {
         className="mx-auto max-w-6xl scroll-mt-20 px-4 py-14 sm:px-6"
       >
         <h2 className="font-display text-2xl font-semibold tracking-tight text-espresso">
-          Browse by category
+          Browse the menu
         </h2>
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {CATEGORIES.map((cat) => {
             const count = products.filter((p) => p.category === cat.slug).length;
             return (
               <Link
                 key={cat.slug}
                 href={`/category/${cat.slug}`}
-                className="group rounded-2xl border border-latte bg-white p-6 transition-colors hover:border-caramel"
+                className="group rounded-2xl border border-latte bg-white p-5 transition-colors hover:border-caramel"
               >
-                <p className="font-display text-xl font-semibold text-espresso group-hover:text-caramel">
+                <p className="font-display text-lg font-semibold text-espresso group-hover:text-caramel">
                   {cat.label}
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-mocha">
                   {cat.blurb}
                 </p>
-                <p className="mt-4 text-xs font-medium uppercase tracking-[0.12em] text-caramel-dark">
+                <p className="mt-3 text-xs font-medium uppercase tracking-[0.12em] text-caramel-dark">
                   {count} {count === 1 ? "item" : "items"} →
                 </p>
               </Link>
@@ -124,10 +124,10 @@ export default async function Home() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="font-display text-3xl font-semibold tracking-tight text-espresso sm:text-4xl">
-              The menu
+              The full menu
             </h2>
             <p className="mt-2 text-sm text-mocha">
-              Roasted fresh and ready to ship.
+              Made to order, ready when you are.
             </p>
           </div>
         </div>

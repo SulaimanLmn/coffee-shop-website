@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
-import { SiteHeader } from "@/components/site-header";
+import { SiteNav } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { Toaster } from "@/components/toaster";
 
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     template: "%s · Bean & Bloom",
   },
   description:
-    "Small-batch specialty coffee, roasted to order and shipped fresh. Single-origin beans, velvety lattes, and slow-steeped cold brew.",
+    "Fresh coffee and baked treats, made to order. Espresso, cold brew, chai, and pastries from Bean & Bloom.",
 };
 
 export default function RootLayout({
@@ -29,7 +29,7 @@ export default function RootLayout({
       className={`${inter.variable} ${fraunces.variable} h-full`}
     >
       <body className="flex min-h-full flex-col bg-cream text-espresso">
-        <SiteHeader />
+        <SiteNav />
         <main className="flex-1">{children}</main>
         <SiteFooter />
         <Toaster />

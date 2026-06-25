@@ -15,7 +15,7 @@ export function SiteFooter() {
         </div>
         <nav className="flex items-center gap-5 text-sm text-mocha">
           <Link href="/" className="hover:text-espresso">
-            Shop
+            Menu
           </Link>
           <Link href="/cart" className="hover:text-espresso">
             Cart
@@ -27,7 +27,7 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-latte/60">
         <p className="mx-auto max-w-6xl px-4 py-4 text-xs text-mocha sm:px-6">
-          &copy;&nbsp;{new Date().getFullYear()} Bean&nbsp;&amp;&nbsp;Bloom. Built for a final project.
+          &copy;&nbsp;{new Date().getFullYear()} Bean&nbsp;&amp;&nbsp;Bloom · Open Mon–Sun, 7am–6pm · Built for a final project.
         </p>
       </div>
     </footer>

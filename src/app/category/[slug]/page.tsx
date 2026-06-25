@@ -45,7 +45,7 @@ export default async function CategoryPage({
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:py-16">
       <nav className="mb-6 flex items-center gap-2 text-sm text-mocha">
         <Link href="/" className="hover:text-espresso">
-          Shop
+          Menu
         </Link>
         <span aria-hidden="true">/</span>
         <span className="text-espresso">{category.label}</span>

@@ -13,8 +13,6 @@ type Props = {
     imageUrl: string;
     stock: number;
     category: string;
-    roastLevel?: string | null;
-    origin?: string | null;
   };
 };
 
@@ -52,11 +50,6 @@ export function ProductCard({ product }: Props) {
           <span className="rounded-full bg-foam px-2 py-0.5 font-medium">
             {categoryLabel(product.category)}
           </span>
-          {product.roastLevel && (
-            <span className="rounded-full bg-foam px-2 py-0.5 font-medium">
-              {product.roastLevel} roast
-            </span>
-          )}
         </div>
 
         <h3 className="mt-2 font-display text-lg font-semibold text-espresso">

@@ -76,7 +76,7 @@ export default async function ProductPage({
       {/* Breadcrumb */}
       <nav className="mb-6 flex items-center gap-2 text-sm text-mocha">
         <Link href="/" className="hover:text-espresso">
-          Shop
+          Menu
         </Link>
         <span aria-hidden="true">/</span>
         <Link
@@ -108,11 +108,6 @@ export default async function ProductPage({
             <span className="rounded-full bg-foam px-2.5 py-0.5 font-medium">
               {categoryLabel(product.category)}
             </span>
-            {product.origin && (
-              <span className="rounded-full bg-foam px-2.5 py-0.5 font-medium">
-                {product.origin}
-              </span>
-            )}
           </div>
 
           <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-espresso sm:text-4xl">
@@ -129,26 +124,6 @@ export default async function ProductPage({
 
           {/* Specs */}
           <dl className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-latte bg-latte">
-            {product.roastLevel && (
-              <div className="bg-white px-4 py-3">
-                <dt className="text-xs uppercase tracking-[0.1em] text-mocha">
-                  Roast
-                </dt>
-                <dd className="mt-1 text-sm font-medium text-espresso">
-                  {product.roastLevel}
-                </dd>
-              </div>
-            )}
-            {product.origin && (
-              <div className="bg-white px-4 py-3">
-                <dt className="text-xs uppercase tracking-[0.1em] text-mocha">
-                  Origin
-                </dt>
-                <dd className="mt-1 text-sm font-medium text-espresso">
-                  {product.origin}
-                </dd>
-              </div>
-            )}
             <div className="bg-white px-4 py-3">
               <dt className="text-xs uppercase tracking-[0.1em] text-mocha">
                 Availability
@@ -158,15 +133,15 @@ export default async function ProductPage({
                   ? "Sold out"
                   : lowStock
                     ? `Only ${product.stock} left`
-                    : "In stock"}
+                    : "Available"}
               </dd>
             </div>
             <div className="bg-white px-4 py-3">
               <dt className="text-xs uppercase tracking-[0.1em] text-mocha">
-                Ships
+                Made to order
               </dt>
               <dd className="mt-1 text-sm font-medium text-espresso">
-                Within 48 hours
+                Fresh when you order
               </dd>
             </div>
           </dl>

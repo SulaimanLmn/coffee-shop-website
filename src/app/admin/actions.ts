@@ -47,29 +47,19 @@ function parseStock(value: FormDataEntryValue | null): number {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
-function optionalString(value: FormDataEntryValue | null): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
 function productDataFromForm(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const imageUrl = String(formData.get("imageUrl") ?? "").trim();
   const priceDollars = parseDollars(formData.get("price"));
-  const category = String(formData.get("category") ?? "beans").trim();
-  const roastLevel = optionalString(formData.get("roastLevel"));
-  const origin = optionalString(formData.get("origin"));
+  const category = String(formData.get("category") ?? "hot-coffee").trim();
 
   return {
     name,
     description,
     imageUrl,
     priceDollars,
-    category: isCategorySlug(category) ? category : "beans",
-    roastLevel,
-    origin,
+    category: isCategorySlug(category) ? category : "hot-coffee",
   };
 }
 
@@ -89,8 +79,6 @@ export async function createProductAction(formData: FormData) {
       price: toCents(data.priceDollars!),
       stock: parseStock(formData.get("stock")),
       category: data.category,
-      roastLevel: data.roastLevel,
-      origin: data.origin,
     },
   });
 
@@ -117,8 +105,6 @@ export async function updateProductAction(formData: FormData) {
       price: toCents(data.priceDollars!),
       stock: parseStock(formData.get("stock")),
       category: data.category,
-      roastLevel: data.roastLevel,
-      origin: data.origin,
     },
   });
 

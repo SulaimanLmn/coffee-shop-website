@@ -61,9 +61,10 @@ export function asOrderStatus(value: string): OrderStatus {
 }
 
 export const CATEGORIES = [
-  { slug: "beans", label: "Coffee Beans", blurb: "Whole-bean singles and blends, roasted to order." },
-  { slug: "drinks", label: "Ready Drinks", blurb: "Cold brew and canned coffee, ready to pour." },
-  { slug: "gear", label: "Brew Gear", blurb: "Grinders, brewers, and accessories for home baristas." },
+  { slug: "hot-coffee", label: "Hot Coffee", blurb: "Espresso, milk drinks, and Americanos — pulled fresh to order." },
+  { slug: "iced-coffee", label: "Iced Coffee", blurb: "Cold brew and iced espresso drinks for warm afternoons." },
+  { slug: "non-coffee", label: "Non-Coffee", blurb: "Chai, hot chocolate, and tea for the caffeine-averse." },
+  { slug: "bakery", label: "Bakery", blurb: "Cookies, croissants, and treats baked fresh each morning." },
 ] as const;
 
 export type CategorySlug = (typeof CATEGORIES)[number]["slug"];
@@ -75,5 +76,3 @@ export function categoryLabel(slug: string): string {
 export function isCategorySlug(value: string): value is CategorySlug {
   return CATEGORIES.some((c) => c.slug === value);
 }
-
-export const ROAST_LEVELS = ["Light", "Medium", "Dark"] as const;

@@ -2,7 +2,7 @@ import {
   createProductAction,
   updateProductAction,
 } from "@/app/admin/actions";
-import { CATEGORIES, ROAST_LEVELS } from "@/lib/catalog";
+import { CATEGORIES } from "@/lib/catalog";
 
 type Props = {
   product?: {
@@ -13,8 +13,6 @@ type Props = {
     imageUrl: string;
     stock: number;
     category: string;
-    roastLevel: string | null;
-    origin: string | null;
   };
 };
 
@@ -35,7 +33,7 @@ export function ProductForm({ product }: Props) {
           defaultValue={product?.name ?? ""}
           required
           maxLength={80}
-          placeholder="Espresso Origin"
+          placeholder="Caffè Latte"
           className={inputClass}
         />
       </label>
@@ -48,7 +46,7 @@ export function ProductForm({ product }: Props) {
           required
           maxLength={280}
           rows={3}
-          placeholder="Single-origin beans, roasted medium-dark…"
+          placeholder="Smooth espresso over steamed milk with a velvety finish."
           className={`${inputClass} resize-none leading-relaxed`}
         />
       </label>
@@ -69,7 +67,7 @@ export function ProductForm({ product }: Props) {
         <span className="text-sm font-medium text-espresso">Category</span>
         <select
           name="category"
-          defaultValue={product?.category ?? "beans"}
+          defaultValue={product?.category ?? "hot-coffee"}
           className={inputClass}
         >
           {CATEGORIES.map((c) => (
@@ -83,37 +81,6 @@ export function ProductForm({ product }: Props) {
       <div className="grid grid-cols-2 gap-4">
         <label className="grid gap-1.5">
           <span className="text-sm font-medium text-espresso">
-            Roast level
-          </span>
-          <select
-            name="roastLevel"
-            defaultValue={product?.roastLevel ?? ""}
-            className={inputClass}
-          >
-            <option value="">— None —</option>
-            {ROAST_LEVELS.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="grid gap-1.5">
-          <span className="text-sm font-medium text-espresso">Origin</span>
-          <input
-            name="origin"
-            defaultValue={product?.origin ?? ""}
-            maxLength={40}
-            placeholder="Ethiopia"
-            className={inputClass}
-          />
-        </label>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <label className="grid gap-1.5">
-          <span className="text-sm font-medium text-espresso">
             Price (USD)
           </span>
           <input
@@ -123,7 +90,7 @@ export function ProductForm({ product }: Props) {
             min="0"
             defaultValue={product ? (product.price / 100).toFixed(2) : ""}
             required
-            placeholder="12.00"
+            placeholder="4.75"
             className={`${inputClass} tabular-nums`}
           />
         </label>
@@ -137,7 +104,7 @@ export function ProductForm({ product }: Props) {
             step="1"
             defaultValue={product?.stock ?? 0}
             required
-            placeholder="40"
+            placeholder="200"
             className={`${inputClass} tabular-nums`}
           />
         </label>
@@ -147,7 +114,7 @@ export function ProductForm({ product }: Props) {
         type="submit"
         className="mt-2 inline-flex items-center justify-center rounded-full bg-caramel px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-caramel-dark"
       >
-        {product ? "Save changes" : "Add product"}
+        {product ? "Save changes" : "Add to menu"}
       </button>
     </form>
   );
