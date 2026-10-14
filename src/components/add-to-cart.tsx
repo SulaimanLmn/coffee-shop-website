@@ -10,6 +10,7 @@ type Props = {
     name: string;
     price: number;
     imageUrl: string;
+    stock: number;
   };
   disabled?: boolean;
   className?: string;

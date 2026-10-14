@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
-import { categoryLabel } from "@/lib/catalog";
+import { availability, availabilityLabel } from "@/lib/catalog";
 import { AddToCart } from "./add-to-cart";
+import { ProductImage } from "./product-image";
 
 type Props = {
   product: {
@@ -12,13 +12,13 @@ type Props = {
     price: number;
     imageUrl: string;
     stock: number;
-    category: string;
+    category: { name: string };
   };
 };
 
 export function ProductCard({ product }: Props) {
-  const soldOut = product.stock <= 0;
-  const lowStock = product.stock > 0 && product.stock <= 5;
+  const avail = availability(product.stock);
+  const soldOut = avail === "sold-out";
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-latte bg-white transition-shadow hover:shadow-sm">
@@ -26,21 +26,19 @@ export function ProductCard({ product }: Props) {
         href={`/products/${product.id}`}
         className="relative block aspect-[4/3] overflow-hidden bg-foam"
       >
-        <Image
+        <ProductImage
           src={product.imageUrl}
           alt={product.name}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="transition-transform duration-500 group-hover:scale-105"
         />
-        {soldOut && (
-          <span className="absolute left-3 top-3 rounded-full bg-espresso/85 px-3 py-1 text-xs font-medium text-cream">
-            Sold out
-          </span>
-        )}
-        {!soldOut && lowStock && (
-          <span className="absolute left-3 top-3 rounded-full bg-amber-500/90 px-3 py-1 text-xs font-medium text-white">
-            Only {product.stock} left
+        {avail !== "in-stock" && (
+          <span
+            className={
+              "absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-medium text-white " +
+              (soldOut ? "bg-espresso/85" : "bg-amber-500/90")
+            }
+          >
+            {availabilityLabel(product.stock)}
           </span>
         )}
       </Link>
@@ -48,7 +46,7 @@ export function ProductCard({ product }: Props) {
       <div className="flex flex-1 flex-col p-5">
         <div className="flex items-center gap-2 text-xs text-mocha">
           <span className="rounded-full bg-foam px-2 py-0.5 font-medium">
-            {categoryLabel(product.category)}
+            {product.category.name}
           </span>
         </div>
 
@@ -71,6 +69,7 @@ export function ProductCard({ product }: Props) {
               name: product.name,
               price: product.price,
               imageUrl: product.imageUrl,
+              stock: product.stock,
             }}
             disabled={soldOut}
           />

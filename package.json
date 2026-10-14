@@ -21,7 +21,6 @@
     "next": "16.2.9",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "stripe": "^22.3.0",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
@@ -34,6 +33,7 @@
     "prisma": "^6.19.3",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }

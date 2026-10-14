@@ -1,78 +1,74 @@
-export const ORDER_STATUSES = [
-  "PENDING",
-  "PAID",
-  "ROASTING",
-  "SHIPPED",
-  "DELIVERED",
-  "CANCELLED",
+import type { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+
+export const SORT_OPTIONS = [
+  { value: "menu", label: "Menu order" },
+  { value: "name-asc", label: "Name: A to Z" },
+  { value: "name-desc", label: "Name: Z to A" },
+  { value: "price-asc", label: "Price: low to high" },
+  { value: "price-desc", label: "Price: high to low" },
 ] as const;
 
-export type OrderStatus = (typeof ORDER_STATUSES)[number];
+export type SortValue = (typeof SORT_OPTIONS)[number]["value"];
 
-export const FULFILLMENT_FLOW: OrderStatus[] = [
-  "PAID",
-  "ROASTING",
-  "SHIPPED",
-  "DELIVERED",
-];
+export type BrowseParams = { q: string; category: string; sort: SortValue };
 
-export function nextStatus(current: OrderStatus): OrderStatus | null {
-  const idx = FULFILLMENT_FLOW.indexOf(current);
-  if (idx === -1 || idx === FULFILLMENT_FLOW.length - 1) return null;
-  return FULFILLMENT_FLOW[idx + 1];
+type RawParams = Record<string, string | string[] | undefined>;
+
+function first(v: string | string[] | undefined): string {
+  return (Array.isArray(v) ? v[0] : v) ?? "";
 }
 
-export function statusTimestampField(status: OrderStatus):
-  | "paidAt"
-  | "roastedAt"
-  | "shippedAt"
-  | "deliveredAt"
-  | null {
-  switch (status) {
-    case "PAID":
-      return "paidAt";
-    case "ROASTING":
-      return "roastedAt";
-    case "SHIPPED":
-      return "shippedAt";
-    case "DELIVERED":
-      return "deliveredAt";
+export function parseBrowseParams(sp: RawParams): BrowseParams {
+  const sort = first(sp.sort);
+  return {
+    q: first(sp.q).trim().slice(0, 100),
+    category: first(sp.category).trim().slice(0, 60),
+    sort: SORT_OPTIONS.some((o) => o.value === sort) ? (sort as SortValue) : "menu",
+  };
+}
+
+export function orderByFor(sort: SortValue): Prisma.ProductOrderByWithRelationInput[] {
+  switch (sort) {
+    case "name-asc":
+      return [{ name: "asc" }];
+    case "name-desc":
+      return [{ name: "desc" }];
+    case "price-asc":
+      return [{ price: "asc" }, { name: "asc" }];
+    case "price-desc":
+      return [{ price: "desc" }, { name: "asc" }];
     default:
-      return null;
+      return [{ createdAt: "asc" }, { name: "asc" }];
   }
 }
 
-export function statusLabel(status: OrderStatus): string {
-  const labels: Record<OrderStatus, string> = {
-    PENDING: "Pending payment",
-    PAID: "Paid",
-    ROASTING: "Roasting",
-    SHIPPED: "Shipped",
-    DELIVERED: "Delivered",
-    CANCELLED: "Cancelled",
+export function buildProductWhere(p: Pick<BrowseParams, "q" | "category">): Prisma.ProductWhereInput {
+  return {
+    ...(p.q ? { name: { contains: p.q, mode: "insensitive" } } : {}),
+    ...(p.category ? { category: { slug: p.category } } : {}),
   };
-  return labels[status];
 }
 
-export function asOrderStatus(value: string): OrderStatus {
-  return (ORDER_STATUSES as readonly string[]).includes(value)
-    ? (value as OrderStatus)
-    : "PENDING";
+export async function listProducts(p: BrowseParams) {
+  return prisma.product.findMany({
+    where: buildProductWhere(p),
+    orderBy: orderByFor(p.sort),
+    include: { category: true },
+  });
 }
 
-export const CATEGORIES = [
-  { slug: "hot-coffee", label: "Hot Coffee", blurb: "Espresso, milk drinks, and Americanos — pulled fresh to order." },
-  { slug: "iced-coffee", label: "Iced Coffee", blurb: "Cold brew and iced espresso drinks for warm afternoons." },
-  { slug: "non-coffee", label: "Non-Coffee", blurb: "Chai, hot chocolate, and tea for the caffeine-averse." },
-  { slug: "bakery", label: "Bakery", blurb: "Cookies, croissants, and treats baked fresh each morning." },
-] as const;
+export type Availability = "sold-out" | "low" | "in-stock";
+export const LOW_STOCK_THRESHOLD = 5;
 
-export type CategorySlug = (typeof CATEGORIES)[number]["slug"];
-
-export function categoryLabel(slug: string): string {
-  return CATEGORIES.find((c) => c.slug === slug)?.label ?? slug;
+export function availability(stock: number): Availability {
+  if (stock <= 0) return "sold-out";
+  return stock <= LOW_STOCK_THRESHOLD ? "low" : "in-stock";
 }
 
-export function isCategorySlug(value: string): value is CategorySlug {
-  return CATEGORIES.some((c) => c.slug === value);
+export function availabilityLabel(stock: number): string {
+  const a = availability(stock);
+  if (a === "sold-out") return "Sold out";
+  if (a === "low") return `Only ${stock} left`;
+  return "In stock";
 }

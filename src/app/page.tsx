@@ -1,143 +1,140 @@
-import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { CATEGORIES } from "@/lib/catalog";
+import {
+  SORT_OPTIONS,
+  listProducts,
+  parseBrowseParams,
+  type BrowseParams,
+} from "@/lib/catalog";
 import { ProductCard } from "@/components/product-card";
 
 export const dynamic = "force-dynamic";
 
-const features = [
-  { label: "Made to order", value: "Pulled fresh when you order" },
-  { label: "Baked daily", value: "Pastries in-house every morning" },
-  { label: "Open 7 days", value: "Mon–Sun · 7am to 6pm" },
-];
+function hrefFor(base: BrowseParams, patch: Partial<BrowseParams>): string {
+  const next = { ...base, ...patch };
+  const qs = new URLSearchParams();
+  if (next.q) qs.set("q", next.q);
+  if (next.category) qs.set("category", next.category);
+  if (next.sort !== "menu") qs.set("sort", next.sort);
+  const s = qs.toString();
+  return `/${s ? `?${s}` : ""}#menu`;
+}
 
-export default async function Home() {
-  const products = await prisma.product.findMany({
-    orderBy: { createdAt: "asc" },
-  });
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = parseBrowseParams(await searchParams);
+  const [categories, products] = await Promise.all([
+    prisma.category.findMany({ orderBy: { name: "asc" } }),
+    listProducts(params),
+  ]);
+  const filtered = !!(params.q || params.category);
+
+  const pill = (active: boolean) =>
+    "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors " +
+    (active
+      ? "border-espresso bg-espresso text-cream"
+      : "border-latte bg-white text-espresso hover:border-caramel");
 
   return (
     <>
-      {/* Hero */}
       <section className="bg-espresso text-cream">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:py-24">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
           <div className="max-w-xl">
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-caramel">
-              Made fresh, served warm
+              Order ahead, pick up fresh
             </p>
-            <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-              Your daily cup, done right.
+            <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl">
+              Your daily cup, ready when you arrive.
             </h1>
-            <p className="mt-5 text-base leading-relaxed text-cream/75 sm:text-lg">
-              Espresso pulled to order, cold brew steeped slow, and pastries
-              baked in-house each morning. Order ahead and skip the wait.
+            <p className="mt-5 text-base leading-relaxed text-cream/75">
+              Browse the coffee and dessert menu, pay online, and collect your order at
+              the Brew Haven counter.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <a
-                href="#menu"
-                className="inline-flex items-center justify-center rounded-full bg-caramel px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-caramel-dark"
-              >
-                View the menu
-              </a>
-              <a
-                href="#categories"
-                className="inline-flex items-center justify-center rounded-full border border-cream/25 px-6 py-3 text-sm font-semibold text-cream transition-colors hover:border-cream/60"
-              >
-                Explore the range
-              </a>
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-3xl border border-cream/10 sm:aspect-[5/4] lg:aspect-[4/5]">
-              <Image
-                src="https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=1000&q=80"
-                alt="A barista pouring latte art into a cup"
-                fill
-                priority
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover"
-              />
-            </div>
-            <div className="absolute -bottom-5 -left-3 rounded-2xl border border-latte bg-cream px-5 py-4 text-espresso shadow-sm sm:-left-5">
-              <p className="font-display text-2xl font-semibold tabular-nums">
-                4.9
-              </p>
-              <p className="text-xs text-mocha">2,300+ cups poured</p>
-            </div>
+            <a
+              href="#menu"
+              className="mt-8 inline-flex items-center justify-center rounded-full bg-caramel px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-caramel-dark"
+            >
+              View the menu
+            </a>
           </div>
         </div>
       </section>
 
-      {/* Trust strip */}
-      <section className="border-b border-latte/70 bg-foam">
-        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-8 sm:grid-cols-3 sm:px-6">
-          {features.map((f) => (
-            <div key={f.label} className="flex flex-col gap-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-caramel-dark">
-                {f.label}
-              </p>
-              <p className="text-sm text-espresso">{f.value}</p>
-            </div>
+      <section id="menu" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-12 sm:px-6">
+        <h2 className="font-display text-3xl font-semibold tracking-tight text-espresso">
+          Menu
+        </h2>
+
+        <div className="mt-6 flex flex-wrap items-center gap-2" aria-label="Filter by category">
+          <Link href={hrefFor(params, { category: "" })} className={pill(!params.category)}>
+            All
+          </Link>
+          {categories.map((c) => (
+            <Link
+              key={c.id}
+              href={hrefFor(params, { category: c.slug })}
+              className={pill(params.category === c.slug)}
+            >
+              {c.name}
+            </Link>
           ))}
         </div>
-      </section>
 
-      {/* Categories */}
-      <section
-        id="categories"
-        className="mx-auto max-w-6xl scroll-mt-20 px-4 py-14 sm:px-6"
-      >
-        <h2 className="font-display text-2xl font-semibold tracking-tight text-espresso">
-          Browse the menu
-        </h2>
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {CATEGORIES.map((cat) => {
-            const count = products.filter((p) => p.category === cat.slug).length;
-            return (
-              <Link
-                key={cat.slug}
-                href={`/category/${cat.slug}`}
-                className="group rounded-2xl border border-latte bg-white p-5 transition-colors hover:border-caramel"
-              >
-                <p className="font-display text-lg font-semibold text-espresso group-hover:text-caramel">
-                  {cat.label}
-                </p>
-                <p className="mt-2 text-sm leading-relaxed text-mocha">
-                  {cat.blurb}
-                </p>
-                <p className="mt-3 text-xs font-medium uppercase tracking-[0.12em] text-caramel-dark">
-                  {count} {count === 1 ? "item" : "items"} →
-                </p>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
+        <form method="get" action="/" className="mt-4 flex flex-wrap items-end gap-3">
+          <input type="hidden" name="category" value={params.category} />
+          <label className="grid gap-1 text-xs font-medium text-mocha">
+            Search
+            <input
+              name="q"
+              defaultValue={params.q}
+              maxLength={100}
+              placeholder="Search by name"
+              className="w-56 rounded-lg border border-latte bg-white px-3 py-2 text-sm text-espresso outline-none focus:border-caramel"
+            />
+          </label>
+          <label className="grid gap-1 text-xs font-medium text-mocha">
+            Sort by
+            <select
+              name="sort"
+              defaultValue={params.sort}
+              className="rounded-lg border border-latte bg-white px-3 py-2 text-sm text-espresso outline-none focus:border-caramel"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="submit"
+            className="rounded-full bg-caramel px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-caramel-dark"
+          >
+            Apply
+          </button>
+          {(filtered || params.sort !== "menu") && (
+            <Link href="/#menu" className="py-2 text-sm font-medium text-mocha hover:text-espresso">
+              Clear
+            </Link>
+          )}
+        </form>
 
-      {/* Menu */}
-      <section
-        id="menu"
-        className="mx-auto max-w-6xl scroll-mt-20 px-4 pb-20 sm:px-6"
-      >
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h2 className="font-display text-3xl font-semibold tracking-tight text-espresso sm:text-4xl">
-              The full menu
-            </h2>
-            <p className="mt-2 text-sm text-mocha">
-              Made to order, ready when you are.
-            </p>
-          </div>
-        </div>
+        <p className="mt-4 text-sm text-mocha" aria-live="polite">
+          {products.length} {products.length === 1 ? "item" : "items"}
+          {params.q ? ` matching “${params.q}”` : ""}
+        </p>
 
         {products.length === 0 ? (
-          <p className="mt-12 rounded-2xl border border-dashed border-latte bg-white p-10 text-center text-mocha">
-            No products are available right now. Please check back soon.
+          <p className="mt-8 rounded-2xl border border-dashed border-latte bg-white p-10 text-center text-mocha">
+            {filtered
+              ? "No menu items match your search. Try a different name or category."
+              : "No products are available right now. Please check back soon."}
           </p>
         ) : (
-          <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

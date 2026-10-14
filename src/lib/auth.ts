@@ -1,98 +1,128 @@
-import {
-  randomBytes,
-  scrypt as scryptCb,
-  timingSafeEqual,
-  createHmac,
-} from "node:crypto";
-import { promisify } from "node:util";
+import { randomBytes, createHmac, createHash } from "node:crypto";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import type { Role, User } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import type { Customer } from "@prisma/client";
+import { safeEqual } from "@/lib/password";
 
-const scrypt = promisify(scryptCb) as (
-  password: string,
-  salt: Buffer,
-  keylen: number
-) => Promise<Buffer>;
+export { hashPassword, verifyPassword, safeEqual } from "@/lib/password";
 
-const SESSION_COOKIE = "customer_session";
-const KEYLEN = 64;
+export const SESSION_COOKIE = "bh_session";
+const CUSTOMER_TTL_S = 60 * 60 * 24 * 30;
+const ADMIN_TTL_S = 60 * 60 * 8;
 
 function sessionSecret(): string {
-  const secret = process.env.CUSTOMER_SESSION_SECRET;
-  if (!secret) {
-    throw new Error("CUSTOMER_SESSION_SECRET is not set");
+  const secret = process.env.SESSION_SECRET;
+  if (!secret || secret.length < 16) {
+    throw new Error("SESSION_SECRET is not set (min 16 characters)");
   }
   return secret;
 }
 
-export async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16);
-  const hash = await scrypt(password, salt, KEYLEN);
-  return `scrypt$${salt.toString("hex")}$${hash.toString("hex")}`;
+/** token = userId.expiresAtSeconds.signature */
+export function signSession(userId: string, expSeconds: number): string {
+  const body = `${userId}.${expSeconds}`;
+  const sig = createHmac("sha256", sessionSecret()).update(body).digest("hex");
+  return `${body}.${sig}`;
 }
 
-export async function verifyPassword(
-  password: string,
-  stored: string
-): Promise<boolean> {
-  const parts = stored.split("$");
-  if (parts.length !== 3 || parts[0] !== "scrypt") return false;
-  const salt = Buffer.from(parts[1], "hex");
-  const expected = Buffer.from(parts[2], "hex");
-  const hash = await scrypt(password, salt, KEYLEN);
-  return hash.length === expected.length && timingSafeEqual(hash, expected);
-}
-
-function signToken(customerId: string): string {
-  const hmac = createHmac("sha256", sessionSecret()).update(customerId);
-  return `${customerId}.${hmac.digest("hex")}`;
-}
-
-function verifyToken(token: string): string | null {
-  const idx = token.indexOf(".");
-  if (idx === -1) return null;
-  const customerId = token.slice(0, idx);
-  const signature = token.slice(idx + 1);
+export function verifySession(
+  token: string,
+  nowSeconds = Math.floor(Date.now() / 1000)
+): string | null {
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  const [userId, exp, sig] = parts;
   const expected = createHmac("sha256", sessionSecret())
-    .update(customerId)
+    .update(`${userId}.${exp}`)
     .digest("hex");
-  const sigBuf = Buffer.from(signature);
-  const expBuf = Buffer.from(expected);
-  if (sigBuf.length !== expBuf.length) return null;
-  if (!timingSafeEqual(sigBuf, expBuf)) return null;
-  return customerId;
+  if (!safeEqual(sig, expected)) return null;
+  const expNum = Number(exp);
+  if (!Number.isFinite(expNum) || expNum < nowSeconds) return null;
+  return userId;
 }
 
-export async function createCustomerSession(customerId: string): Promise<void> {
+export async function createSession(user: Pick<User, "id" | "role">): Promise<void> {
+  const ttl = user.role === "ADMIN" ? ADMIN_TTL_S : CUSTOMER_TTL_S;
   const store = await cookies();
-  store.set(SESSION_COOKIE, signToken(customerId), {
+  store.set(SESSION_COOKIE, signSession(user.id, Math.floor(Date.now() / 1000) + ttl), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 30,
+    maxAge: ttl,
   });
 }
 
-export async function clearCustomerSession(): Promise<void> {
+export async function clearSession(): Promise<void> {
   const store = await cookies();
   store.delete(SESSION_COOKIE);
 }
 
-export async function getCurrentCustomer(): Promise<Customer | null> {
+export type SessionUser = Omit<User, "passwordHash">;
+
+export async function getCurrentUser(): Promise<SessionUser | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  const customerId = verifyToken(token);
-  if (!customerId) return null;
-  return prisma.customer.findUnique({
-    where: { id: customerId },
-    select: { id: true, email: true, name: true, createdAt: true, updatedAt: true },
-  }) as Promise<Customer | null>;
+  const userId = verifySession(token);
+  if (!userId) return null;
+  return prisma.user.findUnique({
+    where: { id: userId },
+    omit: { passwordHash: true },
+  });
 }
 
-export async function getCurrentCustomerId(): Promise<string | null> {
-  const customer = await getCurrentCustomer();
-  return customer?.id ?? null;
+function safeNext(next: string | null | undefined): string {
+  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+}
+
+/** Require a logged-in user (any role). Redirects to /login otherwise. */
+export async function requireUser(next = "/"): Promise<SessionUser> {
+  const user = await getCurrentUser();
+  if (!user) redirect(`/login?next=${encodeURIComponent(safeNext(next))}`);
+  return user;
+}
+
+/** Require an administrator. Redirects to /admin/login otherwise. */
+export async function requireAdmin(): Promise<SessionUser> {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "ADMIN") redirect("/admin/login");
+  return user;
+}
+
+export function isRole(user: { role: Role } | null, role: Role): boolean {
+  return !!user && user.role === role;
+}
+
+export { safeNext };
+
+export function hashToken(raw: string): string {
+  return createHash("sha256").update(raw).digest("hex");
+}
+
+export function newResetToken(): { raw: string; hash: string } {
+  const raw = randomBytes(32).toString("hex");
+  return { raw, hash: hashToken(raw) };
+}
+
+// --- very small in-memory login throttle (per process) ---
+const attempts = new Map<string, { count: number; first: number }>();
+const WINDOW_MS = 10 * 60_000;
+const MAX_ATTEMPTS = 8;
+
+export function loginThrottled(key: string): boolean {
+  const now = Date.now();
+  const rec = attempts.get(key);
+  if (!rec || now - rec.first > WINDOW_MS) return false;
+  return rec.count >= MAX_ATTEMPTS;
+}
+export function recordLoginFailure(key: string): void {
+  const now = Date.now();
+  const rec = attempts.get(key);
+  if (!rec || now - rec.first > WINDOW_MS) attempts.set(key, { count: 1, first: now });
+  else rec.count++;
+}
+export function clearLoginFailures(key: string): void {
+  attempts.delete(key);
 }

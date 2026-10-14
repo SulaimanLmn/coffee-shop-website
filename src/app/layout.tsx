@@ -10,11 +10,11 @@ const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {
-    default: "Bean & Bloom — Specialty Coffee, Roasted to Order",
-    template: "%s · Bean & Bloom",
+    default: "Brew Haven — Order Ahead Coffee",
+    template: "%s · Brew Haven",
   },
   description:
-    "Fresh coffee and baked treats, made to order. Espresso, cold brew, chai, and pastries from Bean & Bloom.",
+    "Order coffee and desserts online from Brew Haven and collect them at the café.",
 };
 
 export default function RootLayout({

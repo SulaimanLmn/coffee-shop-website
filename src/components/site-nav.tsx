@@ -1,22 +1,13 @@
-"use client";
-
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
+import { logoutAction } from "@/lib/actions/auth";
 import { CartIndicator } from "./cart-indicator";
+import { NavLink } from "./nav-link";
 import { SearchBar } from "./search-bar";
 
-function isActive(pathname: string, href: string): boolean {
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(href + "/");
-}
-
-const navLinkClass = (active: boolean) =>
-  "rounded-full px-3 py-2 text-sm font-medium transition-colors " +
-  (active ? "bg-espresso text-cream" : "text-mocha hover:text-espresso");
-
-export function SiteNav() {
-  const pathname = usePathname();
-  const isMenu = pathname === "/" || pathname.startsWith("/category/") || pathname.startsWith("/products/");
+export async function SiteNav() {
+  const user = await getCurrentUser();
+  const isAdmin = user?.role === "ADMIN";
 
   return (
     <header className="sticky top-0 z-40 border-b border-latte/70 bg-cream/85 backdrop-blur-md">
@@ -29,38 +20,44 @@ export function SiteNav() {
             ☕
           </span>
           <span className="font-display text-xl font-semibold tracking-tight text-espresso">
-            Bean&nbsp;&amp;&nbsp;Bloom
+            Brew&nbsp;Haven
           </span>
         </Link>
 
-        <nav className="flex items-center gap-1">
-          <Link href="/" className={navLinkClass(isMenu)}>
-            Menu
-          </Link>
-          <Link
-            href="/cart"
-            className={
-              "inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition-colors " +
-              (isActive(pathname, "/cart")
-                ? "bg-espresso text-cream"
-                : "border border-latte bg-white text-espresso hover:border-caramel")
-            }
-          >
-            Cart
-            <CartIndicator />
-          </Link>
-          <Link href="/account" className={navLinkClass(isActive(pathname, "/account"))}>
-            Account
-          </Link>
-        </nav>
-      </div>
-
-      {/* Search bar on its own row for menu pages */}
-      {isMenu && (
-        <div className="mx-auto flex max-w-6xl items-center px-4 pb-2.5 sm:px-6">
+        <div className="hidden flex-1 justify-center md:flex">
           <SearchBar />
         </div>
-      )}
+
+        <nav className="flex items-center gap-1">
+          <NavLink href="/" exact>
+            Menu
+          </NavLink>
+          {user && !isAdmin && <NavLink href="/orders">Orders</NavLink>}
+          {isAdmin && <NavLink href="/admin">Admin</NavLink>}
+          <NavLink href="/cart" variant="cart">
+            Cart
+            <CartIndicator />
+          </NavLink>
+          {user ? (
+            <>
+              {!isAdmin && <NavLink href="/profile">{user.fullName.split(" ")[0]}</NavLink>}
+              <form action={logoutAction}>
+                <button
+                  type="submit"
+                  className="rounded-full px-3 py-2 text-sm font-medium text-mocha transition-colors hover:text-espresso"
+                >
+                  Log out
+                </button>
+              </form>
+            </>
+          ) : (
+            <NavLink href="/login">Log in</NavLink>
+          )}
+        </nav>
+      </div>
+      <div className="mx-auto flex max-w-6xl items-center px-4 pb-2.5 sm:px-6 md:hidden">
+        <SearchBar />
+      </div>
     </header>
   );
 }

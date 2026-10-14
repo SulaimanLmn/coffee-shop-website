@@ -19,7 +19,7 @@ export function AddToCartWithQuantity({ product }: Props) {
   const add = useCart((s) => s.add);
   const [qty, setQty] = useState(1);
   const soldOut = product.stock <= 0;
-  const max = Math.min(product.stock, 99);
+  const max = Math.min(product.stock, 20);
 
   function handleAdd() {
     if (soldOut) return;
@@ -29,6 +29,7 @@ export function AddToCartWithQuantity({ product }: Props) {
         name: product.name,
         price: product.price,
         imageUrl: product.imageUrl,
+        stock: product.stock,
       },
       qty
     );
