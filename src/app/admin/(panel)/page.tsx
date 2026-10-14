@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/format";
@@ -16,6 +17,7 @@ const dayLabel = (d: Date) =>
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000);
 
 export default async function AdminDashboard() {
+  await requireAdmin();
   const since = daysAgo(14);
   // Only paid orders count towards the numbers (refund-due orders are cancelled).
   const paid = { paymentStatus: "PAID" } as const;

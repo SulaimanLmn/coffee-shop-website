@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime, formatPrice } from "@/lib/format";
 import { adminNextStatuses, orderStatusLabel } from "@/lib/orders";
@@ -19,6 +20,7 @@ export default async function AdminOrderPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const sp = await searchParams;
   const order = await prisma.order.findUnique({

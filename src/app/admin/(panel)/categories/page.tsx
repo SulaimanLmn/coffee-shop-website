@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
   createCategoryAction,
@@ -23,6 +24,7 @@ export default async function AdminCategoriesPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  await requireAdmin();
   const sp = await searchParams;
   const categories = await prisma.category.findMany({
     orderBy: { name: "asc" },

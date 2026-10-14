@@ -14,6 +14,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid body." }, { status: 400 });
   }
 
+  if (!process.env.MIDTRANS_SERVER_KEY) {
+    return NextResponse.json({ error: "Payments are not configured." }, { status: 503 });
+  }
   if (!verifyNotificationSignature(payload)) {
     return NextResponse.json({ error: "Invalid signature." }, { status: 403 });
   }
