@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
-import { availability, availabilityLabel } from "@/lib/catalog";
 import { AddToCart } from "./add-to-cart";
 import { ProductImage } from "./product-image";
 
@@ -11,14 +10,13 @@ type Props = {
     description: string;
     price: number;
     imageUrl: string;
-    stock: number;
+    isAvailable: boolean;
     category: { name: string };
   };
 };
 
 export function ProductCard({ product }: Props) {
-  const avail = availability(product.stock);
-  const soldOut = avail === "sold-out";
+  const unavailable = !product.isAvailable;
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-latte bg-white transition-shadow hover:shadow-sm">
@@ -31,14 +29,9 @@ export function ProductCard({ product }: Props) {
           alt={product.name}
           className="transition-transform duration-500 group-hover:scale-105"
         />
-        {avail !== "in-stock" && (
-          <span
-            className={
-              "absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-medium text-white " +
-              (soldOut ? "bg-espresso/85" : "bg-amber-500/90")
-            }
-          >
-            {availabilityLabel(product.stock)}
+        {unavailable && (
+          <span className="absolute left-3 top-3 rounded-full bg-espresso/85 px-3 py-1 text-xs font-medium text-white">
+            Unavailable
           </span>
         )}
       </Link>
@@ -69,9 +62,9 @@ export function ProductCard({ product }: Props) {
               name: product.name,
               price: product.price,
               imageUrl: product.imageUrl,
-              stock: product.stock,
             }}
-            disabled={soldOut}
+            disabled={unavailable}
+            disabledLabel="Unavailable"
           />
         </div>
       </div>

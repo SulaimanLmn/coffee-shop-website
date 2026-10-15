@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildReceipt, canIssueReceipt } from "./receipt";
-import { availability, orderByFor, parseBrowseParams, buildProductWhere } from "./catalog";
+import { availability, availabilityLabel, orderByFor, parseBrowseParams, buildProductWhere } from "./catalog";
 import { normalizeCart, OrderError } from "./order-service";
 import { isValidImageUrl, normalizeEmail, normalizePhone, parseIntStrict, slugify } from "./validation";
 import { sniffImageType } from "./uploads";
@@ -64,9 +64,15 @@ describe("catalog browsing", () => {
     expect(buildProductWhere({ q: "", category: "" })).toEqual({});
   });
   it("classifies availability", () => {
-    expect(availability(0)).toBe("sold-out");
-    expect(availability(3)).toBe("low");
-    expect(availability(50)).toBe("in-stock");
+    expect(availability(true)).toBe("available");
+    expect(availability(false)).toBe("unavailable");
+    expect(availabilityLabel(true)).toBe("Available");
+    expect(availabilityLabel(false)).toBe("Unavailable");
+  });
+  it("can restrict the admin list to available products", () => {
+    expect(buildProductWhere({ q: "", category: "", onlyAvailable: true })).toEqual({
+      isAvailable: true,
+    });
   });
 });
 

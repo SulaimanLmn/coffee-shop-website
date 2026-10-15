@@ -10,23 +10,23 @@ export type CartItem = {
   name: string;
   price: number;
   imageUrl: string;
-  stock: number;
   quantity: number;
 };
 
 export type CartProductInfo = Omit<CartItem, "quantity">;
+
+/** Live catalog data used to reconcile a persisted cart. */
+export type LiveProduct = CartProductInfo & { isAvailable: boolean };
 
 type CartState = {
   items: CartItem[];
   add: (item: CartProductInfo, qty?: number) => void;
   remove: (id: string) => void;
   setQuantity: (id: string, quantity: number) => void;
-  /** Reconcile with live catalog data: drops unavailable items, refreshes price/stock, clamps qty. */
-  reconcile: (live: CartProductInfo[]) => { removed: string[]; adjusted: string[] };
+  /** Reconcile with live catalog data: drops unavailable items, refreshes price, clamps qty. */
+  reconcile: (live: LiveProduct[]) => { removed: string[]; adjusted: string[] };
   clear: () => void;
 };
-
-const cap = (stock: number) => Math.max(0, Math.min(stock, MAX_LINE_QTY));
 
 export const useCart = create<CartState>()(
   persist(
@@ -35,18 +35,17 @@ export const useCart = create<CartState>()(
       add: (item, qty = 1) =>
         set((state) => {
           const existing = state.items.find((i) => i.id === item.id);
-          const limit = cap(item.stock);
           if (existing) {
             return {
               items: state.items.map((i) =>
                 i.id === item.id
-                  ? { ...i, ...item, quantity: Math.min(i.quantity + qty, limit) }
+                  ? { ...i, ...item, quantity: Math.min(i.quantity + qty, MAX_LINE_QTY) }
                   : i
               ),
             };
           }
           return {
-            items: [...state.items, { ...item, quantity: Math.min(qty, limit) }],
+            items: [...state.items, { ...item, quantity: Math.min(qty, MAX_LINE_QTY) }],
           };
         }),
       remove: (id) =>
@@ -57,7 +56,7 @@ export const useCart = create<CartState>()(
             quantity <= 0
               ? state.items.filter((i) => i.id !== id)
               : state.items.map((i) =>
-                  i.id === id ? { ...i, quantity: Math.min(quantity, cap(i.stock)) } : i
+                  i.id === id ? { ...i, quantity: Math.min(quantity, MAX_LINE_QTY) } : i
                 ),
         })),
       reconcile: (live) => {
@@ -67,20 +66,20 @@ export const useCart = create<CartState>()(
         const next: CartItem[] = [];
         for (const item of get().items) {
           const p = byId.get(item.id);
-          if (!p || p.stock <= 0) {
+          if (!p || !p.isAvailable) {
             removed.push(item.name);
             continue;
           }
-          const quantity = Math.min(item.quantity, cap(p.stock));
+          const quantity = Math.min(item.quantity, MAX_LINE_QTY);
           if (quantity !== item.quantity || p.price !== item.price) adjusted.push(p.name);
-          next.push({ ...item, ...p, quantity });
+          next.push({ id: p.id, name: p.name, price: p.price, imageUrl: p.imageUrl, quantity });
         }
         set({ items: next });
         return { removed, adjusted };
       },
       clear: () => set({ items: [] }),
     }),
-    { name: "brew-haven-cart", version: 2, migrate: () => ({ items: [] }) as never }
+    { name: "brew-haven-cart", version: 3, migrate: () => ({ items: [] }) as never }
   )
 );
 

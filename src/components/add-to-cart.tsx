@@ -10,13 +10,14 @@ type Props = {
     name: string;
     price: number;
     imageUrl: string;
-    stock: number;
   };
   disabled?: boolean;
+  /** Visible text shown instead of "Add to Cart" while disabled. */
+  disabledLabel?: string;
   className?: string;
 };
 
-export function AddToCart({ product, disabled, className }: Props) {
+export function AddToCart({ product, disabled, disabledLabel, className }: Props) {
   const add = useCart((s) => s.add);
   const [added, setAdded] = useState(false);
 
@@ -39,7 +40,7 @@ export function AddToCart({ product, disabled, className }: Props) {
         (className ?? "")
       }
     >
-      {added ? "Added ✓" : "Add to Cart"}
+      {disabled && disabledLabel ? disabledLabel : added ? "Added ✓" : "Add to Cart"}
     </button>
   );
 }

@@ -18,23 +18,23 @@ type SeedProduct = {
   description: string;
   price: number; // whole IDR
   imageUrl: string;
-  stock: number;
+  isAvailable: boolean;
   category: string;
 };
 
 const products: SeedProduct[] = [
-  { name: "Espresso", description: "A double shot, rich and syrupy with a thick golden crema. The base of everything we do.", price: 18000, imageUrl: img("1559056199-641a0ac8b55e"), stock: 200, category: "hot-coffee" },
-  { name: "Cappuccino", description: "Equal parts espresso, steamed milk, and dense foam, dusted with a whisper of cocoa.", price: 28000, imageUrl: img("1517701550927-30cf4ba1dba5"), stock: 200, category: "hot-coffee" },
-  { name: "Caffè Latte", description: "Smooth espresso over microfoam-steamed milk with a velvety, milky finish.", price: 30000, imageUrl: img("1587049352851-8d4e89133924"), stock: 200, category: "hot-coffee" },
-  { name: "Caffè Mocha", description: "Espresso, steamed milk, and dark chocolate, finished with a swirl of whipped cream.", price: 33000, imageUrl: img("1610889556528-9a770e32642f"), stock: 180, category: "hot-coffee" },
-  { name: "Americano", description: "Espresso lengthened with hot water for a clean, bold cup.", price: 24000, imageUrl: img("1442512543430-36342c04f745"), stock: 200, category: "hot-coffee" },
-  { name: "Cold Brew", description: "Steeped for 18 hours and served over ice: smooth, low-acid and naturally sweet.", price: 30000, imageUrl: img("1521302080334-4bebac2763a6"), stock: 120, category: "iced-coffee" },
-  { name: "Iced Latte", description: "Chilled espresso and cold milk over ice, creamy and refreshing.", price: 32000, imageUrl: img("1461023058943-07fcbe16d735"), stock: 120, category: "iced-coffee" },
-  { name: "Iced Americano", description: "Double espresso poured over ice and cold water for a crisp, bright finish.", price: 27000, imageUrl: img("1447933601403-0c6688de566e"), stock: 120, category: "iced-coffee" },
-  { name: "Chai Latte", description: "Spiced black tea simmered with steamed milk, warming and fragrant.", price: 31000, imageUrl: img("1495474472287-4d71bcdd2085"), stock: 90, category: "non-coffee" },
-  { name: "Hot Chocolate", description: "Rich dark chocolate whisked into steamed milk, topped with foam.", price: 27000, imageUrl: img("1485808191679-5f8ed106819e"), stock: 90, category: "non-coffee" },
-  { name: "Chocolate Chip Cookie", description: "Baked fresh each morning: crisp edges, gooey centre, flaky sea salt.", price: 20000, imageUrl: img("1499636136210-6f4ee915583e"), stock: 40, category: "bakery" },
-  { name: "Butter Croissant", description: "Flaky, golden and buttery, baked in small batches throughout the day.", price: 24000, imageUrl: img("1555507036-ab1f4038808a"), stock: 30, category: "bakery" },
+  { name: "Espresso", description: "A double shot, rich and syrupy with a thick golden crema. The base of everything we do.", price: 18000, imageUrl: img("1559056199-641a0ac8b55e"), isAvailable: true, category: "hot-coffee" },
+  { name: "Cappuccino", description: "Equal parts espresso, steamed milk, and dense foam, dusted with a whisper of cocoa.", price: 28000, imageUrl: img("1517701550927-30cf4ba1dba5"), isAvailable: true, category: "hot-coffee" },
+  { name: "Caffè Latte", description: "Smooth espresso over microfoam-steamed milk with a velvety, milky finish.", price: 30000, imageUrl: img("1587049352851-8d4e89133924"), isAvailable: true, category: "hot-coffee" },
+  { name: "Caffè Mocha", description: "Espresso, steamed milk, and dark chocolate, finished with a swirl of whipped cream.", price: 33000, imageUrl: img("1610889556528-9a770e32642f"), isAvailable: true, category: "hot-coffee" },
+  { name: "Americano", description: "Espresso lengthened with hot water for a clean, bold cup.", price: 24000, imageUrl: img("1442512543430-36342c04f745"), isAvailable: true, category: "hot-coffee" },
+  { name: "Cold Brew", description: "Steeped for 18 hours and served over ice: smooth, low-acid and naturally sweet.", price: 30000, imageUrl: img("1521302080334-4bebac2763a6"), isAvailable: true, category: "iced-coffee" },
+  { name: "Iced Latte", description: "Chilled espresso and cold milk over ice, creamy and refreshing.", price: 32000, imageUrl: img("1461023058943-07fcbe16d735"), isAvailable: true, category: "iced-coffee" },
+  { name: "Iced Americano", description: "Double espresso poured over ice and cold water for a crisp, bright finish.", price: 27000, imageUrl: img("1447933601403-0c6688de566e"), isAvailable: true, category: "iced-coffee" },
+  { name: "Chai Latte", description: "Spiced black tea simmered with steamed milk, warming and fragrant.", price: 31000, imageUrl: img("1495474472287-4d71bcdd2085"), isAvailable: true, category: "non-coffee" },
+  { name: "Hot Chocolate", description: "Rich dark chocolate whisked into steamed milk, topped with foam.", price: 27000, imageUrl: img("1485808191679-5f8ed106819e"), isAvailable: true, category: "non-coffee" },
+  { name: "Chocolate Chip Cookie", description: "Baked fresh each morning: crisp edges, gooey centre, flaky sea salt.", price: 20000, imageUrl: img("1499636136210-6f4ee915583e"), isAvailable: true, category: "bakery" },
+  { name: "Butter Croissant", description: "Flaky, golden and buttery, baked in small batches throughout the day.", price: 24000, imageUrl: img("1555507036-ab1f4038808a"), isAvailable: true, category: "bakery" },
 ];
 
 async function main() {
@@ -51,13 +51,13 @@ async function main() {
 
   console.log("Seeding menu items…");
   for (const p of products) {
-    const { category, ...data } = p;
+    const { category, isAvailable, ...data } = p;
     const categoryId = catIds.get(category)!;
     const existing = await prisma.product.findFirst({ where: { name: p.name } });
     if (existing) {
-      await prisma.product.update({ where: { id: existing.id }, data: { ...data, categoryId } });
+      await prisma.product.update({ where: { id: existing.id }, data: { ...data, categoryId } }); // keeps the admin's availability choice
     } else {
-      await prisma.product.create({ data: { ...data, categoryId } });
+      await prisma.product.create({ data: { ...data, categoryId, isAvailable } });
     }
   }
 

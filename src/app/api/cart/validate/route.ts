@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-/** Returns live catalog data for cart item ids so the client can reconcile price/stock. */
+/** Returns live catalog data for cart item ids so the client can reconcile price/availability. */
 export async function POST(request: Request) {
   let body: unknown;
   try {
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   }
   const products = await prisma.product.findMany({
     where: { id: { in: ids as string[] } },
-    select: { id: true, name: true, price: true, imageUrl: true, stock: true },
+    select: { id: true, name: true, price: true, imageUrl: true, isAvailable: true },
   });
   return NextResponse.json({ products });
 }

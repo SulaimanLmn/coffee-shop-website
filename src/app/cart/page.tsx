@@ -29,7 +29,7 @@ export default function CartPage() {
   // Default to the earliest slot once slots are known.
   const selectedPickup = pickup || slots[0]?.value || "";
 
-  // Reconcile the persisted cart with live prices/stock once on load.
+  // Reconcile the persisted cart with live prices/availability once on load.
   useEffect(() => {
     if (!hydrated) return;
     const ids = useCart.getState().items.map((i) => i.id);
@@ -45,7 +45,7 @@ export default function CartPage() {
         if (cancelled || !data) return;
         const { removed, adjusted } = reconcile(data.products);
         if (removed.length) toast(`No longer available: ${removed.join(", ")}`, "error");
-        else if (adjusted.length) toast(`Updated price or stock for: ${adjusted.join(", ")}`, "info");
+        else if (adjusted.length) toast(`Updated price for: ${adjusted.join(", ")}`, "info");
       })
       .catch(() => {});
     return () => {

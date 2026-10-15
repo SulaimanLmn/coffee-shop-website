@@ -9,7 +9,6 @@ import { saveImage } from "@/lib/uploads";
 import { isValidImageUrl, parseIntStrict, slugify, str } from "@/lib/validation";
 
 const MAX_PRICE = 10_000_000;
-const MAX_STOCK = 100_000;
 
 function back(path: string, key: string, value: string): never {
   redirect(`${path}?${key}=${encodeURIComponent(value)}`);
@@ -25,7 +24,7 @@ type ProductInput = {
   name: string;
   description: string;
   price: number;
-  stock: number;
+  isAvailable: boolean;
   categoryId: string;
   imageUrl: string;
 };
@@ -35,13 +34,13 @@ async function readProduct(formData: FormData, returnPath: string): Promise<Prod
   const description = str(formData.get("description"), 500);
   const categoryId = str(formData.get("categoryId"), 40);
   const price = parseIntStrict(formData.get("price"), 1, MAX_PRICE);
-  const stock = parseIntStrict(formData.get("stock"), 0, MAX_STOCK);
+  // Unchecked checkboxes are absent from FormData, so absence means off.
+  const isAvailable = formData.get("isAvailable") === "on";
   let imageUrl = str(formData.get("imageUrl"), 500);
 
   if (!name) back(returnPath, "error", "Product name is required.");
   if (!description) back(returnPath, "error", "Description is required.");
   if (price === null) back(returnPath, "error", `Price must be a whole number of IDR between 1 and ${MAX_PRICE.toLocaleString("en-US")}.`);
-  if (stock === null) back(returnPath, "error", `Stock must be a whole number between 0 and ${MAX_STOCK.toLocaleString("en-US")}.`);
 
   const category = categoryId ? await prisma.category.findUnique({ where: { id: categoryId } }) : null;
   if (!category) back(returnPath, "error", "Please choose a category.");
@@ -55,7 +54,7 @@ async function readProduct(formData: FormData, returnPath: string): Promise<Prod
   if (!imageUrl) back(returnPath, "error", "Provide an image URL or upload an image.");
   if (!isValidImageUrl(imageUrl)) back(returnPath, "error", "Image URL must start with http:// or https://.");
 
-  return { name, description, price: price!, stock: stock!, categoryId, imageUrl };
+  return { name, description, price: price!, isAvailable, categoryId, imageUrl };
 }
 
 export async function createProductAction(formData: FormData) {
@@ -93,7 +92,7 @@ export async function deleteProductAction(formData: FormData) {
         back(
           "/admin/products",
           "error",
-          "This product appears in past orders and cannot be deleted. Set its stock to 0 instead."
+          "This product appears in past orders and cannot be deleted. Switch it to unavailable instead."
         );
       }
       if (e.code === "P2025") back("/admin/products", "error", "That product no longer exists.");

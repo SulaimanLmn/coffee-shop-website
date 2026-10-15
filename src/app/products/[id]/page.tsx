@@ -76,7 +76,7 @@ export default async function ProductPage({
             <div className="bg-white px-4 py-3">
               <dt className="text-xs uppercase tracking-[0.1em] text-mocha">Availability</dt>
               <dd className="mt-1 text-sm font-medium text-espresso">
-                {availabilityLabel(product.stock)}
+                {availabilityLabel(product.isAvailable)}
               </dd>
             </div>
             <div className="bg-white px-4 py-3">
@@ -92,7 +92,7 @@ export default async function ProductPage({
                 name: product.name,
                 price: product.price,
                 imageUrl: product.imageUrl,
-                stock: product.stock,
+                isAvailable: product.isAvailable,
               }}
             />
           </div>

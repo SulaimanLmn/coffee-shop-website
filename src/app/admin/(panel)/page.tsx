@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/auth";
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/format";
-import { LOW_STOCK_THRESHOLD } from "@/lib/catalog";
 import { SalesChart, TopProductsChart } from "@/components/admin-charts";
 
 export const metadata: Metadata = { title: "Admin dashboard" };
@@ -22,7 +20,7 @@ export default async function AdminDashboard() {
   // Only paid orders count towards the numbers (refund-due orders are cancelled).
   const paid = { paymentStatus: "PAID" } as const;
 
-  const [totalOrders, sales, pending, completed, totalProducts, totalCategories, recent, top, lowStock] =
+  const [totalOrders, sales, pending, completed, totalProducts, totalCategories, recent, top] =
     await Promise.all([
       prisma.order.count({ where: paid }),
       prisma.order.aggregate({
@@ -43,12 +41,6 @@ export default async function AdminDashboard() {
         _sum: { quantity: true },
         orderBy: { _sum: { quantity: "desc" } },
         take: 5,
-      }),
-      prisma.product.findMany({
-        where: { stock: { lte: LOW_STOCK_THRESHOLD } },
-        orderBy: { stock: "asc" },
-        select: { id: true, name: true, stock: true },
-        take: 10,
       }),
     ]);
 
@@ -100,29 +92,6 @@ export default async function AdminDashboard() {
               data={top.map((t) => ({ name: t.productName, units: t._sum.quantity ?? 0 }))}
             />
           </div>
-        </section>
-
-        <section className="rounded-2xl border border-latte bg-white p-5">
-          <h2 className="font-display text-lg font-semibold text-espresso">Low stock</h2>
-          {lowStock.length === 0 ? (
-            <p className="mt-4 text-sm text-mocha">All products are well stocked.</p>
-          ) : (
-            <ul className="mt-4 divide-y divide-latte text-sm">
-              {lowStock.map((p) => (
-                <li key={p.id} className="flex items-center justify-between py-2">
-                  <Link
-                    href={`/admin/products?edit=${p.id}`}
-                    className="text-espresso hover:text-caramel"
-                  >
-                    {p.name}
-                  </Link>
-                  <span className={p.stock === 0 ? "font-semibold text-red-700" : "text-amber-700"}>
-                    {p.stock === 0 ? "Sold out" : `${p.stock} left`}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
         </section>
       </div>
     </div>

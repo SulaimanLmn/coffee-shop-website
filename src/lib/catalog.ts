@@ -43,8 +43,11 @@ export function orderByFor(sort: SortValue): Prisma.ProductOrderByWithRelationIn
   }
 }
 
-export function buildProductWhere(p: Pick<BrowseParams, "q" | "category">): Prisma.ProductWhereInput {
+export function buildProductWhere(
+  p: Pick<BrowseParams, "q" | "category"> & { onlyAvailable?: boolean }
+): Prisma.ProductWhereInput {
   return {
+    ...(p.onlyAvailable ? { isAvailable: true } : {}),
     ...(p.q ? { name: { contains: p.q, mode: "insensitive" } } : {}),
     ...(p.category ? { category: { slug: p.category } } : {}),
   };
@@ -58,17 +61,12 @@ export async function listProducts(p: BrowseParams) {
   });
 }
 
-export type Availability = "sold-out" | "low" | "in-stock";
-export const LOW_STOCK_THRESHOLD = 5;
+export type Availability = "available" | "unavailable";
 
-export function availability(stock: number): Availability {
-  if (stock <= 0) return "sold-out";
-  return stock <= LOW_STOCK_THRESHOLD ? "low" : "in-stock";
+export function availability(isAvailable: boolean): Availability {
+  return isAvailable ? "available" : "unavailable";
 }
 
-export function availabilityLabel(stock: number): string {
-  const a = availability(stock);
-  if (a === "sold-out") return "Sold out";
-  if (a === "low") return `Only ${stock} left`;
-  return "In stock";
+export function availabilityLabel(isAvailable: boolean): string {
+  return isAvailable ? "Available" : "Unavailable";
 }

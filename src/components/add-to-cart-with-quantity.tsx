@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useCart } from "@/lib/cart-store";
+import { MAX_LINE_QTY, useCart } from "@/lib/cart-store";
 import { toast } from "@/lib/toast";
 import { formatPrice } from "@/lib/format";
 
@@ -11,25 +11,23 @@ type Props = {
     name: string;
     price: number;
     imageUrl: string;
-    stock: number;
+    isAvailable: boolean;
   };
 };
 
 export function AddToCartWithQuantity({ product }: Props) {
   const add = useCart((s) => s.add);
   const [qty, setQty] = useState(1);
-  const soldOut = product.stock <= 0;
-  const max = Math.min(product.stock, 20);
+  const unavailable = !product.isAvailable;
 
   function handleAdd() {
-    if (soldOut) return;
+    if (unavailable) return;
     add(
       {
         id: product.id,
         name: product.name,
         price: product.price,
         imageUrl: product.imageUrl,
-        stock: product.stock,
       },
       qty
     );
@@ -53,7 +51,7 @@ export function AddToCartWithQuantity({ product }: Props) {
         <button
           type="button"
           aria-label="Increase quantity"
-          onClick={() => setQty((q) => Math.min(max, q + 1))}
+          onClick={() => setQty((q) => Math.min(MAX_LINE_QTY, q + 1))}
           className="grid h-11 w-11 place-items-center rounded-full text-espresso transition-colors hover:bg-foam"
         >
           +
@@ -63,10 +61,10 @@ export function AddToCartWithQuantity({ product }: Props) {
       <button
         type="button"
         onClick={handleAdd}
-        disabled={soldOut}
+        disabled={unavailable}
         className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-caramel px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-caramel-dark disabled:cursor-not-allowed disabled:bg-latte disabled:text-mocha"
       >
-        {soldOut ? "Sold out" : `Add ${qty} to cart · ${formatPrice(product.price * qty)}`}
+        {unavailable ? "Unavailable" : `Add ${qty} to cart · ${formatPrice(product.price * qty)}`}
       </button>
     </div>
   );

@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import type { Order, OrderItem } from "@prisma/client";
+import type { Order } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   cancelTransaction,
@@ -60,23 +60,9 @@ export function normalizeCart(raw: unknown): Map<string, number> {
   return map;
 }
 
-type Tx = Prisma.TransactionClient;
-
-async function releaseStock(
-  tx: Tx,
-  items: Pick<OrderItem, "productId" | "quantity">[]
-) {
-  for (const item of items) {
-    await tx.product.update({
-      where: { id: item.productId },
-      data: { stock: { increment: item.quantity } },
-    });
-  }
-}
-
 /**
  * Before starting a new checkout, settle or cancel the user's earlier unpaid
- * orders so abandoned payment attempts do not keep stock reserved.
+ * orders so abandoned payment attempts do not pile up as duplicate pending orders.
  */
 export async function supersedeUnpaidOrders(userId: string) {
   const unpaid = await prisma.order.findMany({
@@ -97,8 +83,8 @@ export async function supersedeUnpaidOrders(userId: string) {
 }
 
 /**
- * Create an unpaid PENDING order, reserving stock atomically, then open a Snap
- * transaction. If Midtrans fails the reservation is released.
+ * Create an unpaid PENDING order for available products, then open a Snap
+ * transaction. If Midtrans fails the order is marked FAILED/CANCELLED.
  */
 export async function createOrderAndSnapToken(args: {
   user: { id: string; fullName: string; email: string; phone: string | null };
@@ -117,18 +103,8 @@ export async function createOrderAndSnapToken(args: {
       throw new OrderError("One or more items are no longer available.", 409);
     }
     for (const p of products) {
-      const qty = cart.get(p.id)!;
-      const res = await tx.product.updateMany({
-        where: { id: p.id, stock: { gte: qty } },
-        data: { stock: { decrement: qty } },
-      });
-      if (res.count === 0) {
-        throw new OrderError(
-          p.stock > 0
-            ? `Sorry, only ${p.stock} × ${p.name} left.`
-            : `Sorry, ${p.name} is sold out.`,
-          409
-        );
+      if (!p.isAvailable) {
+        throw new OrderError(`Sorry, ${p.name} is currently unavailable.`, 409);
       }
     }
     const total = products.reduce((s, p) => s + p.price * cart.get(p.id)!, 0);
@@ -170,16 +146,13 @@ export async function createOrderAndSnapToken(args: {
     });
     return { order, token: snap.token };
   } catch (error) {
-    await prisma.$transaction(async (tx) => {
-      const res = await tx.order.updateMany({
-        where: { id: order.id, paymentStatus: "UNPAID" },
-        data: {
-          paymentStatus: "FAILED",
-          orderStatus: "CANCELLED",
-          cancelledAt: new Date(),
-        },
-      });
-      if (res.count === 1) await releaseStock(tx, order.items);
+    await prisma.order.updateMany({
+      where: { id: order.id, paymentStatus: "UNPAID" },
+      data: {
+        paymentStatus: "FAILED",
+        orderStatus: "CANCELLED",
+        cancelledAt: new Date(),
+      },
     });
     console.error("Snap transaction failed", error);
     throw new OrderError("Unable to start payment. Please try again.", 502);
@@ -202,7 +175,6 @@ export async function applyMidtransStatus(
   return prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { midtransOrderId },
-      include: { items: true },
     });
     if (!order) return null;
 
@@ -233,7 +205,7 @@ export async function applyMidtransStatus(
         );
       }
     } else if (mapped === "FAILED" || mapped === "EXPIRED") {
-      const res = await tx.order.updateMany({
+      await tx.order.updateMany({
         where: { id: order.id, paymentStatus: "UNPAID" },
         data: {
           paymentStatus: mapped,
@@ -242,9 +214,6 @@ export async function applyMidtransStatus(
           paymentMethod: method ?? undefined,
         },
       });
-      if (res.count === 1 && order.orderStatus !== "CANCELLED") {
-        await releaseStock(tx, order.items);
-      }
     } else if (mapped === "PENDING" && method && !order.paymentMethod) {
       await tx.order.update({
         where: { id: order.id },
@@ -296,7 +265,6 @@ export async function transitionOrder({ orderId, to, actor, userId }: Transition
   const updated = await prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { id: orderId },
-      include: { items: true },
     });
     if (!order || (actor === "CUSTOMER" && order.userId !== userId)) {
       throw new OrderError("Order not found.", 404);
@@ -337,7 +305,6 @@ export async function transitionOrder({ orderId, to, actor, userId }: Transition
       throw new OrderError("Order was updated by someone else. Refresh and retry.", 409);
     }
 
-    if (to === "CANCELLED") await releaseStock(tx, order.items);
     return tx.order.findUnique({ where: { id: orderId } });
   });
 

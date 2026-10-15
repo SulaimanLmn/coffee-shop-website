@@ -46,7 +46,7 @@ export default async function AdminProductsPage({
               <th className="px-4 py-3 font-medium">Product</th>
               <th className="px-4 py-3 font-medium">Category</th>
               <th className="px-4 py-3 text-right font-medium">Price</th>
-              <th className="px-4 py-3 text-right font-medium">Stock</th>
+              <th className="px-4 py-3 font-medium">Available</th>
               <th className="px-4 py-3 font-medium">
                 <span className="sr-only">Actions</span>
               </th>
@@ -64,10 +64,8 @@ export default async function AdminProductsPage({
                 </td>
                 <td className="px-4 py-3 text-mocha">{p.category.name}</td>
                 <td className="px-4 py-3 text-right tabular-nums">{formatPrice(p.price)}</td>
-                <td
-                  className={`px-4 py-3 text-right tabular-nums ${p.stock <= 5 ? "font-semibold text-amber-700" : ""}`}
-                >
-                  {p.stock}
+                <td className={`px-4 py-3 ${p.isAvailable ? "text-mocha" : "font-semibold text-red-700"}`}>
+                  {p.isAvailable ? "On" : "Off"}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-3">
@@ -155,16 +153,15 @@ export default async function AdminProductsPage({
                 className={inputClass}
               />
             </Field>
-            <Field label="Stock">
+            <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-espresso">
               <input
-                name="stock"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                required
-                defaultValue={editing?.stock ?? 0}
-                className={inputClass}
+                type="checkbox"
+                name="isAvailable"
+                defaultChecked={editing?.isAvailable ?? true}
+                className="h-4 w-4 accent-caramel-dark"
               />
-            </Field>
+              Available to order
+            </label>
             <Field label="Image URL" hint="Or upload a file below (the upload takes priority).">
               <input
                 name="imageUrl"
