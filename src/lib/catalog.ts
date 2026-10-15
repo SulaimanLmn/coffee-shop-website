@@ -44,10 +44,10 @@ export function orderByFor(sort: SortValue): Prisma.ProductOrderByWithRelationIn
 }
 
 export function buildProductWhere(
-  p: Pick<BrowseParams, "q" | "category"> & { onlyAvailable?: boolean }
+  p: Pick<BrowseParams, "q" | "category"> & { availability?: Availability | null }
 ): Prisma.ProductWhereInput {
   return {
-    ...(p.onlyAvailable ? { isAvailable: true } : {}),
+    ...(p.availability ? { isAvailable: p.availability === "available" } : {}),
     ...(p.q ? { name: { contains: p.q, mode: "insensitive" } } : {}),
     ...(p.category ? { category: { slug: p.category } } : {}),
   };
@@ -69,4 +69,10 @@ export function availability(isAvailable: boolean): Availability {
 
 export function availabilityLabel(isAvailable: boolean): string {
   return isAvailable ? "Available" : "Unavailable";
+}
+
+/** Admin product list filter: "?avail=available|unavailable"; anything else means all. */
+export function parseAvailabilityFilter(v: string | string[] | undefined): Availability | null {
+  const value = first(v);
+  return value === "available" || value === "unavailable" ? value : null;
 }

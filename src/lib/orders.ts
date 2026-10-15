@@ -78,11 +78,80 @@ export function checkTransition(
   return { ok: false, reason: `Cannot change ${ORDER_LABELS[from]} to ${ORDER_LABELS[to]}.` };
 }
 
-/** Admin-selectable next statuses for the order-management dropdown. */
+/** Admin-selectable next statuses (at most one: the admin only moves orders forward). */
 export function adminNextStatuses(from: OrderStatus): OrderStatus[] {
   if (from === "PENDING") return ["PREPARING"];
   if (from === "PREPARING") return ["READY"];
   return [];
+}
+
+/** Button text for the admin's one-click action that moves an order to `to`. */
+export function adminActionLabel(to: OrderStatus): string {
+  if (to === "PREPARING") return "Start preparing";
+  if (to === "READY") return "Mark ready";
+  return `Mark as ${ORDER_LABELS[to]}`;
+}
+
+// ---------- Admin order management (live board + history) ----------
+
+export const BOARD_STATUSES = ["PENDING", "PREPARING", "READY"] as const;
+export type BoardStatus = (typeof BOARD_STATUSES)[number];
+
+/** Group live orders into board columns, soonest pickup first. */
+export function boardColumns<T extends { orderStatus: OrderStatus; pickupTime: Date }>(
+  orders: T[]
+): Record<BoardStatus, T[]> {
+  const columns: Record<BoardStatus, T[]> = { PENDING: [], PREPARING: [], READY: [] };
+  for (const o of orders) {
+    if ((BOARD_STATUSES as readonly string[]).includes(o.orderStatus)) {
+      columns[o.orderStatus as BoardStatus].push(o);
+    }
+  }
+  for (const key of BOARD_STATUSES) {
+    columns[key].sort((a, b) => a.pickupTime.getTime() - b.pickupTime.getTime());
+  }
+  return columns;
+}
+
+export const ADMIN_HISTORY_PAGE_SIZE = 25;
+
+export type AdminOrdersView = {
+  view: "board" | "history";
+  status: OrderStatus | null;
+  q: string;
+  page: number;
+  /** Order id shown in the detail drawer. */
+  order: string | null;
+};
+
+type RawParams = Record<string, string | string[] | undefined>;
+
+function firstParam(v: string | string[] | undefined): string {
+  return (Array.isArray(v) ? v[0] : v) ?? "";
+}
+
+export function parseAdminOrdersView(sp: RawParams): AdminOrdersView {
+  const page = Number.parseInt(firstParam(sp.page), 10);
+  const status = firstParam(sp.status);
+  return {
+    view: firstParam(sp.view) === "history" ? "history" : "board",
+    status: isOrderStatus(status) ? status : null,
+    q: firstParam(sp.q).trim().slice(0, 60),
+    page: Number.isFinite(page) && page > 0 ? Math.min(page, 10_000) : 1,
+    order: firstParam(sp.order).slice(0, 40) || null,
+  };
+}
+
+/** Build a /admin/orders URL, leaving out values that are the default. */
+export function adminOrdersHref(next: Partial<AdminOrdersView>): string {
+  const params = new URLSearchParams();
+  if (next.view === "history") params.set("view", "history");
+  if (next.status) params.set("status", next.status);
+  if (next.q) params.set("q", next.q);
+  if (next.page && next.page > 1) params.set("page", String(next.page));
+  if (next.order) params.set("order", next.order);
+  const qs = params.toString();
+  return qs ? `/admin/orders?${qs}` : "/admin/orders";
 }
 
 export function statusTimestampField(

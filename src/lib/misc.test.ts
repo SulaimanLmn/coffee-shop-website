@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { buildReceipt, canIssueReceipt } from "./receipt";
-import { availability, availabilityLabel, orderByFor, parseBrowseParams, buildProductWhere } from "./catalog";
+import {
+  availability,
+  availabilityLabel,
+  buildProductWhere,
+  orderByFor,
+  parseAvailabilityFilter,
+  parseBrowseParams,
+} from "./catalog";
+import { parseProductsView, productsHref } from "./admin-products";
+import { safeReturn, withParam } from "./redirects";
+import { buildSalesSeries, jakartaDayKey, jakartaDayStart } from "./stats";
 import { normalizeCart, OrderError } from "./order-service";
 import { isValidImageUrl, normalizeEmail, normalizePhone, parseIntStrict, slugify } from "./validation";
 import { sniffImageType } from "./uploads";
@@ -69,10 +79,16 @@ describe("catalog browsing", () => {
     expect(availabilityLabel(true)).toBe("Available");
     expect(availabilityLabel(false)).toBe("Unavailable");
   });
-  it("can restrict the admin list to available products", () => {
-    expect(buildProductWhere({ q: "", category: "", onlyAvailable: true })).toEqual({
+  it("can restrict the admin list by availability", () => {
+    expect(buildProductWhere({ q: "", category: "", availability: "available" })).toEqual({
       isAvailable: true,
     });
+    expect(buildProductWhere({ q: "", category: "", availability: "unavailable" })).toEqual({
+      isAvailable: false,
+    });
+    expect(parseAvailabilityFilter("unavailable")).toBe("unavailable");
+    expect(parseAvailabilityFilter("bogus")).toBeNull();
+    expect(parseAvailabilityFilter(undefined)).toBeNull();
   });
 });
 
@@ -138,5 +154,75 @@ describe("session tokens", () => {
 describe("formatPrice", () => {
   it("formats whole rupiah", () => {
     expect(formatPrice(28000).replace(/\s/g, " ")).toMatch(/Rp\s?28\.000/);
+  });
+});
+
+describe("admin products view", () => {
+  it("parses filters and drawer state", () => {
+    expect(parseProductsView({})).toEqual({ q: "", category: "", avail: null, edit: null, isNew: false });
+    expect(
+      parseProductsView({ q: " latte ", category: "hot-coffee", avail: "unavailable", edit: "p1" })
+    ).toEqual({ q: "latte", category: "hot-coffee", avail: "unavailable", edit: "p1", isNew: false });
+    expect(parseProductsView({ new: "1" }).isNew).toBe(true);
+  });
+
+  it("keeps filters when building drawer links", () => {
+    const view = parseProductsView({ q: "ice", avail: "available" });
+    expect(productsHref({ ...view })).toBe("/admin/products?q=ice&avail=available");
+    expect(productsHref({ ...view, isNew: true })).toBe("/admin/products?q=ice&avail=available&new=1");
+    expect(productsHref({ ...view, edit: "p1", isNew: true })).toBe(
+      "/admin/products?q=ice&avail=available&edit=p1"
+    );
+    expect(productsHref({})).toBe("/admin/products");
+  });
+});
+
+describe("redirect helpers", () => {
+  it("only accepts same-site paths", () => {
+    expect(safeReturn("/admin/orders?x=1", "/")).toBe("/admin/orders?x=1");
+    expect(safeReturn("//evil.com", "/")).toBe("/");
+    expect(safeReturn("/\\evil.com", "/")).toBe("/");
+    expect(safeReturn("https://evil.com", "/")).toBe("/");
+    expect(safeReturn(null, "/fallback")).toBe("/fallback");
+  });
+
+  it("can restrict returns to a prefix", () => {
+    expect(safeReturn("/admin/products?q=a", "/admin/products", "/admin/products")).toBe(
+      "/admin/products?q=a"
+    );
+    expect(safeReturn("/admin/orders", "/admin/products", "/admin/products")).toBe("/admin/products");
+    expect(safeReturn("/admin/productsx", "/admin/products", "/admin/products")).toBe("/admin/products");
+  });
+
+  it("adds params before the hash", () => {
+    expect(withParam("/a", "notice", "ok go")).toBe("/a?notice=ok%20go");
+    expect(withParam("/a?x=1#row", "notice", "y")).toBe("/a?x=1&notice=y#row");
+  });
+});
+
+describe("dashboard stats helpers", () => {
+  // 2026-10-14 20:00 UTC = 03:00 on the 15th in Jakarta
+  const now = new Date("2026-10-14T20:00:00Z");
+
+  it("uses the Jakarta calendar day", () => {
+    expect(jakartaDayKey(now)).toBe("2026-10-15");
+    expect(jakartaDayStart(now).toISOString()).toBe("2026-10-14T17:00:00.000Z");
+  });
+
+  it("zero-fills a 14-day series ending today and buckets by Jakarta day", () => {
+    const series = buildSalesSeries(
+      [
+        { orderDate: new Date("2026-10-14T20:30:00Z"), totalAmount: 30000 }, // 15th (WIB)
+        { orderDate: new Date("2026-10-15T01:00:00Z"), totalAmount: 20000 }, // 15th (WIB)
+        { orderDate: new Date("2026-10-14T10:00:00Z"), totalAmount: 5000 }, // 14th (WIB)
+      ],
+      now
+    );
+    expect(series).toHaveLength(14);
+    expect(series[13].key).toBe("2026-10-15");
+    expect(series[13].amount).toBe(50000);
+    expect(series[12].amount).toBe(5000);
+    expect(series[0].amount).toBe(0);
+    expect(series[0].key).toBe("2026-10-02");
   });
 });

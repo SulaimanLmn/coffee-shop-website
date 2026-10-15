@@ -66,3 +66,24 @@ export function isValidPickup(value: string, now: Date = new Date()): boolean {
     mins % SLOT_MINUTES === 0
   );
 }
+
+export const SOON_MINUTES = 15;
+
+export type PickupUrgency = { kind: "overdue" | "soon" | "later"; minutes: number };
+
+/** How close a pickup is. `minutes` is the distance from now in whole minutes (always >= 0). */
+export function pickupUrgency(pickupTime: Date | string, now: Date = new Date()): PickupUrgency {
+  const diff = Math.round((new Date(pickupTime).getTime() - now.getTime()) / 60_000);
+  if (diff < 0) return { kind: "overdue", minutes: -diff };
+  return { kind: diff <= SOON_MINUTES ? "soon" : "later", minutes: diff };
+}
+
+/** Text label, so urgency never relies on colour alone. */
+export function urgencyLabel({ kind, minutes }: PickupUrgency): string {
+  if (kind === "overdue") return `Overdue ${minutes} min`;
+  if (minutes === 0) return "Due now";
+  if (minutes < 60) return `in ${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `in ${h} h` : `in ${h} h ${m} min`;
+}

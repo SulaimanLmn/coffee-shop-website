@@ -6,19 +6,28 @@ import {
 } from "@/lib/orders";
 
 const orderStyles: Record<OrderStatus, string> = {
-  PENDING: "bg-amber-100 text-amber-800",
-  PREPARING: "bg-orange-100 text-orange-900",
-  READY: "bg-blue-100 text-blue-800",
-  COMPLETED: "bg-green-100 text-green-800",
-  CANCELLED: "bg-red-100 text-red-700",
+  PENDING: "bg-status-pending-soft text-status-pending-ink",
+  PREPARING: "bg-status-preparing-soft text-status-preparing-ink",
+  READY: "bg-status-ready-soft text-status-ready-ink",
+  COMPLETED: "bg-status-completed-soft text-status-completed-ink",
+  CANCELLED: "bg-status-cancelled-soft text-status-cancelled-ink",
+};
+
+/** Accent stripe colour for board cards and column headers. */
+export const orderBarStyles: Record<OrderStatus, string> = {
+  PENDING: "bg-status-pending",
+  PREPARING: "bg-status-preparing",
+  READY: "bg-status-ready",
+  COMPLETED: "bg-status-completed",
+  CANCELLED: "bg-status-cancelled",
 };
 
 const paymentStyles: Record<PaymentStatus, string> = {
-  UNPAID: "bg-amber-100 text-amber-800",
-  PAID: "bg-green-100 text-green-800",
-  FAILED: "bg-red-100 text-red-700",
-  EXPIRED: "bg-red-100 text-red-700",
-  REFUND_DUE: "bg-purple-100 text-purple-800",
+  UNPAID: "bg-status-pending-soft text-status-pending-ink",
+  PAID: "bg-status-completed-soft text-status-completed-ink",
+  FAILED: "bg-status-cancelled-soft text-status-cancelled-ink",
+  EXPIRED: "bg-status-cancelled-soft text-status-cancelled-ink",
+  REFUND_DUE: "bg-purple-100 text-purple-900",
 };
 
 const badge = "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap ";
