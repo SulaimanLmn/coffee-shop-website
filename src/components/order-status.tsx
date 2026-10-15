@@ -42,29 +42,59 @@ export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
 
 const STEPS: OrderStatus[] = ["PENDING", "PREPARING", "READY", "COMPLETED"];
 
-/** Progress tracker: Pending -> Preparing -> Ready for Pickup -> Completed. */
-export function OrderProgress({ status }: { status: OrderStatus }) {
+export type StepTimes = Partial<Record<OrderStatus, Date | null>>;
+
+const stepTime = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Asia/Jakarta",
+});
+
+/**
+ * Progress tracker: Pending -> Preparing -> Ready for Pickup -> Completed.
+ * Pass `times` to show when each step happened.
+ */
+export function OrderProgress({ status, times }: { status: OrderStatus; times?: StepTimes }) {
   if (status === "CANCELLED") return null;
   const current = STEPS.indexOf(status);
   return (
-    <ol className="flex flex-wrap items-center gap-1" aria-label="Order progress">
+    <ol className="flex flex-wrap items-start gap-x-1 gap-y-2" aria-label="Order progress">
       {STEPS.map((step, i) => {
         const done = i <= current;
+        const at = times?.[step];
         return (
-          <li key={step} className="flex items-center gap-1">
-            <span
-              aria-current={i === current ? "step" : undefined}
-              className={`grid h-7 w-7 place-items-center rounded-full text-xs font-semibold ${
-                done ? "bg-caramel-dark text-white" : "bg-foam text-mocha"
-              }`}
-            >
-              {done ? "✓" : i + 1}
-            </span>
-            <span className={`text-xs ${done ? "text-espresso" : "text-mocha"}`}>
-              {orderStatusLabel(step)}
+          <li
+            key={step}
+            aria-current={i === current ? "step" : undefined}
+            className="flex items-start gap-1"
+          >
+            <span className="flex items-center gap-1.5">
+              <span
+                aria-hidden="true"
+                className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-semibold ${
+                  done ? "bg-caramel-dark text-white" : "bg-foam text-mocha"
+                }`}
+              >
+                {i < current ? "✓" : i + 1}
+              </span>
+              <span className="flex flex-col leading-tight">
+                <span className={`text-xs font-medium ${done ? "text-espresso" : "text-mocha"}`}>
+                  {orderStatusLabel(step)}
+                </span>
+                {done && at && (
+                  <span className="text-[11px] tabular-nums text-mocha">{stepTime.format(at)}</span>
+                )}
+                <span className="sr-only">
+                  Step {i + 1} of {STEPS.length}
+                  {i < current ? ", done" : i === current ? ", current" : ", not yet"}
+                </span>
+              </span>
             </span>
             {i < STEPS.length - 1 && (
-              <span className={`mx-1 h-px w-4 ${i < current ? "bg-caramel-dark" : "bg-latte"}`} />
+              <span
+                aria-hidden="true"
+                className={`mx-1 mt-3.5 h-px w-4 ${i < current ? "bg-caramel-dark" : "bg-latte"}`}
+              />
             )}
           </li>
         );

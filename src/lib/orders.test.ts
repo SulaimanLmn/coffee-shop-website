@@ -5,7 +5,10 @@ import {
   adminOrdersHref,
   boardColumns,
   checkTransition,
+  customerOrdersHref,
+  isActiveOrder,
   newMidtransOrderId,
+  parseCustomerOrdersView,
   parseAdminOrdersView,
   type OrderStatus,
 } from "./orders";
@@ -130,5 +133,33 @@ describe("adminOrdersHref", () => {
   it("round-trips the view state", () => {
     const href = adminOrdersHref({ view: "history", status: "PENDING", q: "a b", page: 2, order: "x1" });
     expect(href).toBe("/admin/orders?view=history&status=PENDING&q=a+b&page=2&order=x1");
+  });
+});
+
+describe("customer orders view", () => {
+  it("treats pending, preparing and ready orders as active", () => {
+    expect(["PENDING", "PREPARING", "READY"].every((s) => isActiveOrder(s as OrderStatus))).toBe(true);
+    expect(isActiveOrder("COMPLETED")).toBe(false);
+    expect(isActiveOrder("CANCELLED")).toBe(false);
+  });
+
+  it("parses filters and the open modal", () => {
+    expect(parseCustomerOrdersView({})).toEqual({ status: null, q: "", view: null, from: null });
+    expect(
+      parseCustomerOrdersView({ status: "READY", q: " bh-1 ", view: "o1", from: "active" })
+    ).toEqual({ status: "READY", q: "bh-1", view: "o1", from: "active" });
+    expect(parseCustomerOrdersView({ status: "nope", from: "x" })).toEqual({
+      status: null,
+      q: "",
+      view: null,
+      from: null,
+    });
+  });
+
+  it("builds links and only keeps `from` while a modal is open", () => {
+    expect(customerOrdersHref({})).toBe("/orders");
+    expect(customerOrdersHref({ status: "PENDING", q: "a" })).toBe("/orders?status=PENDING&q=a");
+    expect(customerOrdersHref({ view: "o1", from: "active" })).toBe("/orders?view=o1&from=active");
+    expect(customerOrdersHref({ from: "active" })).toBe("/orders");
   });
 });

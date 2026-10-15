@@ -182,3 +182,41 @@ export function newMidtransOrderId(): string {
     .join("");
   return `BH-${rand}${Date.now().toString(36).toUpperCase().slice(-3)}`;
 }
+
+// ---------- Customer order history ----------
+
+/** Orders the customer is still waiting on (shown in "Active orders"). */
+export function isActiveOrder(status: OrderStatus): boolean {
+  return status === "PENDING" || status === "PREPARING" || status === "READY";
+}
+
+export type CustomerOrdersView = {
+  status: OrderStatus | null;
+  q: string;
+  /** Order id open in the details modal. */
+  view: string | null;
+  /** Which list opened the modal, so focus returns to the right link. */
+  from: "active" | null;
+};
+
+export function parseCustomerOrdersView(sp: RawParams): CustomerOrdersView {
+  const status = firstParam(sp.status);
+  return {
+    status: isOrderStatus(status) ? status : null,
+    q: firstParam(sp.q).trim().slice(0, 40),
+    view: firstParam(sp.view).slice(0, 40) || null,
+    from: firstParam(sp.from) === "active" ? "active" : null,
+  };
+}
+
+export function customerOrdersHref(next: Partial<CustomerOrdersView>): string {
+  const params = new URLSearchParams();
+  if (next.status) params.set("status", next.status);
+  if (next.q) params.set("q", next.q);
+  if (next.view) {
+    params.set("view", next.view);
+    if (next.from) params.set("from", next.from);
+  }
+  const qs = params.toString();
+  return qs ? `/orders?${qs}` : "/orders";
+}
