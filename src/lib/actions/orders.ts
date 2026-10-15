@@ -5,17 +5,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin, requireUser } from "@/lib/auth";
 import { isOrderStatus } from "@/lib/orders";
 import { OrderError, transitionOrder } from "@/lib/order-service";
-
-function safeReturn(value: FormDataEntryValue | null, fallback: string): string {
-  const v = typeof value === "string" ? value : "";
-  return v.startsWith("/") && !v.startsWith("//") ? v : fallback;
-}
-
-function withParam(url: string, key: string, value: string): string {
-  const [path, hash = ""] = url.split("#");
-  const sep = path.includes("?") ? "&" : "?";
-  return `${path}${sep}${key}=${encodeURIComponent(value)}${hash ? `#${hash}` : ""}`;
-}
+import { safeReturn, withParam } from "@/lib/redirects";
 
 function revalidateOrders(orderId: string) {
   revalidatePath("/orders");

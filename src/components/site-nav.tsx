@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Logo } from "./logo";
 import { getCurrentUser } from "@/lib/auth";
 import { logoutAction } from "@/lib/actions/auth";
 import { CartIndicator } from "./cart-indicator";
@@ -12,17 +12,7 @@ export async function SiteNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-latte/70 bg-cream/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-        <Link href="/" className="flex shrink-0 items-center gap-2">
-          <span
-            aria-hidden="true"
-            className="grid h-8 w-8 place-items-center rounded-full bg-espresso text-sm text-cream"
-          >
-            ☕
-          </span>
-          <span className="font-display text-xl font-semibold tracking-tight text-espresso">
-            Brew&nbsp;Haven
-          </span>
-        </Link>
+        <Logo />
 
         <div className="hidden flex-1 justify-center md:flex">
           <SearchBar />

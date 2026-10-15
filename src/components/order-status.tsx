@@ -7,7 +7,7 @@ import {
 
 const orderStyles: Record<OrderStatus, string> = {
   PENDING: "bg-amber-100 text-amber-800",
-  PREPARING: "bg-caramel/15 text-caramel-dark",
+  PREPARING: "bg-orange-100 text-orange-900",
   READY: "bg-blue-100 text-blue-800",
   COMPLETED: "bg-green-100 text-green-800",
   CANCELLED: "bg-red-100 text-red-700",
@@ -46,7 +46,7 @@ export function OrderProgress({ status }: { status: OrderStatus }) {
             <span
               aria-current={i === current ? "step" : undefined}
               className={`grid h-7 w-7 place-items-center rounded-full text-xs font-semibold ${
-                done ? "bg-caramel text-white" : "bg-foam text-mocha"
+                done ? "bg-caramel-dark text-white" : "bg-foam text-mocha"
               }`}
             >
               {done ? "✓" : i + 1}
@@ -55,7 +55,7 @@ export function OrderProgress({ status }: { status: OrderStatus }) {
               {orderStatusLabel(step)}
             </span>
             {i < STEPS.length - 1 && (
-              <span className={`mx-1 h-px w-4 ${i < current ? "bg-caramel" : "bg-latte"}`} />
+              <span className={`mx-1 h-px w-4 ${i < current ? "bg-caramel-dark" : "bg-latte"}`} />
             )}
           </li>
         );

@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
+import { Logo } from "./logo";
 
 export const inputClass =
-  "w-full rounded-lg border border-latte bg-white px-3 py-2 text-sm text-espresso outline-none transition-colors focus:border-caramel";
+  "w-full rounded-lg border border-latte bg-white px-3 py-2 text-sm text-espresso transition-colors focus:border-caramel-dark";
 
 export const primaryButtonClass =
-  "inline-flex items-center justify-center rounded-full bg-caramel px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-caramel-dark disabled:cursor-not-allowed disabled:bg-latte disabled:text-mocha";
+  "inline-flex items-center justify-center rounded-full bg-caramel-dark px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-coffee disabled:cursor-not-allowed disabled:bg-latte disabled:text-mocha";
 
 export const secondaryButtonClass =
   "inline-flex items-center justify-center rounded-full border border-latte bg-white px-5 py-2.5 text-sm font-semibold text-espresso transition-colors hover:border-caramel";
@@ -60,6 +61,9 @@ export function AuthCard({
   return (
     <div className="mx-auto flex max-w-sm flex-col px-4 py-16 sm:px-6">
       <div className="rounded-2xl border border-latte bg-white p-8">
+        <div className="mb-5 flex justify-center">
+          <Logo />
+        </div>
         <div className="mb-6 text-center">
           <h1 className="font-display text-2xl font-semibold text-espresso">{title}</h1>
           {subtitle && <p className="mt-1 text-sm text-mocha">{subtitle}</p>}

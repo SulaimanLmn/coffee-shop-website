@@ -34,6 +34,49 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+:focus-visible {
+  outline: 2px solid var(--color-caramel-dark);
+  outline-offset: 2px;
+}
+
+/* Modal and drawer used by RouteDialog (native <dialog>) */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+dialog.route-dialog::backdrop {
+  background: rgb(42 26 17 / 0.45);
+  animation: route-dialog-fade 0.18s ease-out;
+}
+
+dialog.route-dialog-center[open] {
+  animation: route-dialog-pop 0.18s ease-out;
+}
+
+dialog.route-dialog-side[open] {
+  animation: route-dialog-slide 0.22s ease-out;
+}
+
+@keyframes route-dialog-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes route-dialog-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@keyframes route-dialog-slide {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
 ::selection {
   background: var(--color-caramel);
   color: #fff;

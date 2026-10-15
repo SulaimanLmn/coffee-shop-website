@@ -44,7 +44,7 @@ export function ProductCard({ product }: Props) {
         </div>
 
         <h3 className="mt-2 font-display text-lg font-semibold text-espresso">
-          <Link href={`/products/${product.id}`} className="hover:text-caramel">
+          <Link href={`/products/${product.id}`} className="hover:text-caramel-dark">
             {product.name}
           </Link>
         </h3>

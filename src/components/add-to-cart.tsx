@@ -36,7 +36,7 @@ export function AddToCart({ product, disabled, disabledLabel, className }: Props
       disabled={disabled}
       aria-disabled={disabled}
       className={
-        "inline-flex items-center justify-center rounded-full bg-caramel px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-caramel-dark disabled:cursor-not-allowed disabled:bg-latte disabled:text-mocha " +
+        "inline-flex items-center justify-center rounded-full bg-caramel-dark px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coffee disabled:cursor-not-allowed disabled:bg-latte disabled:text-mocha " +
         (className ?? "")
       }
     >

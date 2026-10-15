@@ -43,7 +43,7 @@ export default async function Home({
       <section className="bg-espresso text-cream">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
           <div className="max-w-xl">
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-caramel">
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-caramel-dark">
               Order ahead, pick up fresh
             </p>
             <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl">
@@ -55,7 +55,7 @@ export default async function Home({
             </p>
             <a
               href="#menu"
-              className="mt-8 inline-flex items-center justify-center rounded-full bg-caramel px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-caramel-dark"
+              className="mt-8 inline-flex items-center justify-center rounded-full bg-caramel-dark px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-coffee"
             >
               View the menu
             </a>
@@ -111,7 +111,7 @@ export default async function Home({
           </label>
           <button
             type="submit"
-            className="rounded-full bg-caramel px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-caramel-dark"
+            className="rounded-full bg-caramel-dark px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-coffee"
           >
             Apply
           </button>

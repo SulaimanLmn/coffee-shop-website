@@ -32,7 +32,7 @@ export function NavLink({
         : "text-mocha hover:text-espresso";
 
   return (
-    <Link href={href} className={base + style}>
+    <Link href={href} aria-current={active ? "page" : undefined} className={base + style}>
       {children}
     </Link>
   );

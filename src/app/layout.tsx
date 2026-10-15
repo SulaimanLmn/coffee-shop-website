@@ -1,8 +1,8 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
-import { SiteNav } from "@/components/site-nav";
-import { SiteFooter } from "@/components/site-footer";
+import { FlashToast } from "@/components/flash-toast";
 import { Toaster } from "@/components/toaster";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -29,9 +29,16 @@ export default function RootLayout({
       className={`${inter.variable} ${fraunces.variable} h-full`}
     >
       <body className="flex min-h-full flex-col bg-cream text-espresso">
-        <SiteNav />
-        <main className="flex-1">{children}</main>
-        <SiteFooter />
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[60] focus:rounded-full focus:bg-espresso focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-cream"
+        >
+          Skip to content
+        </a>
+        {children}
+        <Suspense fallback={null}>
+          <FlashToast />
+        </Suspense>
         <Toaster />
       </body>
     </html>

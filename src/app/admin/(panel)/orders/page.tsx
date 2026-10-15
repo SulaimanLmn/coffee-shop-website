@@ -145,7 +145,7 @@ export default async function AdminOrdersPage({
                           </select>
                           <button
                             type="submit"
-                            className="rounded-full bg-caramel px-3 py-1.5 text-xs font-semibold text-white hover:bg-caramel-dark"
+                            className="rounded-full bg-caramel-dark px-3 py-1.5 text-xs font-semibold text-white hover:bg-coffee"
                           >
                             Update
                           </button>

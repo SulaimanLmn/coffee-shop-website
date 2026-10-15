@@ -62,7 +62,7 @@ export function AddToCartWithQuantity({ product }: Props) {
         type="button"
         onClick={handleAdd}
         disabled={unavailable}
-        className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-caramel px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-caramel-dark disabled:cursor-not-allowed disabled:bg-latte disabled:text-mocha"
+        className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-caramel-dark px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-coffee disabled:cursor-not-allowed disabled:bg-latte disabled:text-mocha"
       >
         {unavailable ? "Unavailable" : `Add ${qty} to cart · ${formatPrice(product.price * qty)}`}
       </button>

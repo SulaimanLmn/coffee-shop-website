@@ -11,7 +11,7 @@ export function CartIndicator() {
   return (
     <span
       aria-label={`${display} items in cart`}
-      className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-caramel px-1.5 text-xs font-semibold tabular-nums text-white"
+      className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-caramel-dark px-1.5 text-xs font-semibold tabular-nums text-white"
     >
       {display}
     </span>

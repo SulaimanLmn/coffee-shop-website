@@ -98,7 +98,7 @@ export function TopProductsChart({ data }: { data: ProductBar[] }) {
           </span>
           <div className="h-6 flex-1 overflow-hidden rounded-full bg-foam">
             <div
-              className="flex h-full items-center justify-end rounded-full bg-caramel px-2 text-xs font-semibold text-white"
+              className="flex h-full items-center justify-end rounded-full bg-caramel-dark px-2 text-xs font-semibold text-white"
               style={{ width: `${(d.units / max) * 100}%` }}
             >
               {d.units}
