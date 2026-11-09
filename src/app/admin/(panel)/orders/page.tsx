@@ -20,7 +20,8 @@ import {
 import { AutoRefresh } from "@/components/auto-refresh";
 import { AdminOrderDetail } from "@/components/admin/admin-order-detail";
 import { OrderBoard } from "@/components/admin/order-board";
-import { Notice, inputClass, primaryButtonClass } from "@/components/form-kit";
+import { LiveSearch } from "@/components/admin/live-search";
+import { Notice } from "@/components/form-kit";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/order-status";
 import { PageHeader } from "@/components/page-header";
 import { RouteDialog } from "@/components/route-dialog";
@@ -131,33 +132,16 @@ function ViewTab({ href, current, children }: { href: string; current: boolean; 
 function SearchForm({ view }: { view: AdminOrdersView }) {
   const isBoard = view.view === "board";
   return (
-    <form method="get" action="/admin/orders" role="search" className="flex items-center gap-2">
-      {!isBoard && <input type="hidden" name="view" value="history" />}
-      {!isBoard && view.status && <input type="hidden" name="status" value={view.status} />}
-      <label className="sr-only" htmlFor="order-search">
-        {isBoard ? "Highlight orders by ID or customer" : "Search orders by ID or customer"}
-      </label>
-      <input
-        id="order-search"
-        name="q"
-        type="search"
-        defaultValue={view.q}
-        maxLength={60}
-        placeholder="Order ID or customer"
-        className={`${inputClass} w-52`}
-      />
-      <button type="submit" className={primaryButtonClass}>
-        {isBoard ? "Find" : "Search"}
-      </button>
-      {view.q && (
-        <Link
-          href={adminOrdersHref({ view: view.view, status: view.status })}
-          className="text-sm font-medium text-mocha hover:text-espresso"
-        >
-          Clear
-        </Link>
-      )}
-    </form>
+    <LiveSearch
+      action="/admin/orders"
+      id="order-search"
+      label={isBoard ? "Highlight orders by ID or customer" : "Search orders by ID or customer"}
+      placeholder="Order ID or customer"
+      q={view.q}
+      keep={isBoard ? {} : { view: "history", status: view.status }}
+      maxLength={60}
+      className="w-52"
+    />
   );
 }
 

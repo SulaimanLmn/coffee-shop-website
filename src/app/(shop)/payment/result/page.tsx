@@ -3,8 +3,10 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { syncOrderPayment } from "@/lib/order-service";
+import { failureReasonFor } from "@/lib/midtrans";
 import { ClearCartOnMount } from "@/components/clear-cart";
 import { PayButton } from "@/components/snap-pay";
+import { SandboxSteps } from "@/components/sandbox-guide";
 import { primaryButtonClass, secondaryButtonClass } from "@/components/form-kit";
 
 export const metadata: Metadata = { title: "Payment result" };
@@ -73,14 +75,19 @@ export default async function PaymentResultPage({
             Back to Cart
           </Link>
         </div>
+        <div className="w-full rounded-xl border border-dashed border-caramel bg-foam/60 p-4 text-left">
+          <p className="mb-3 text-sm font-semibold text-espresso">
+            Paying in test mode (Midtrans Sandbox)
+          </p>
+          <SandboxSteps />
+        </div>
       </Shell>
     );
   }
 
   const reason =
-    order.paymentStatus === "EXPIRED"
-      ? "The payment window expired before payment was completed."
-      : "The payment was declined, cancelled or could not be processed.";
+    order.failureReason ??
+    failureReasonFor(order.paymentStatus === "EXPIRED" ? "expire" : undefined);
 
   return (
     <Shell title="Payment failed">

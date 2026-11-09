@@ -18,7 +18,8 @@ export async function SiteNav() {
           <SearchBar />
         </div>
 
-        <nav className="flex items-center gap-1">
+        {/* On narrow phones the links scroll inside the bar instead of widening the page. */}
+        <nav className="-my-1 flex min-w-0 items-center gap-1 overflow-x-auto py-1 [scrollbar-width:none]">
           <NavLink href="/" exact>
             Menu
           </NavLink>
@@ -34,7 +35,7 @@ export async function SiteNav() {
               <form action={logoutAction}>
                 <button
                   type="submit"
-                  className="rounded-full px-3 py-2 text-sm font-medium text-mocha transition-colors hover:text-espresso"
+                  className="whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium text-mocha transition-colors hover:text-espresso"
                 >
                   Log out
                 </button>

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   expectedSignature,
+  failureReasonFor,
   mapTransactionStatus,
+  notificationUrlFor,
   parseGross,
   paymentLabel,
   verifyNotificationSignature,
@@ -57,5 +59,34 @@ describe("helpers", () => {
       "bank transfer (BCA)"
     );
     expect(paymentLabel({})).toBeNull();
+  });
+});
+
+describe("failureReasonFor", () => {
+  it("gives a specific reason for each failed Midtrans status", () => {
+    expect(failureReasonFor("deny")).toMatch(/declined/);
+    expect(failureReasonFor("cancel")).toMatch(/cancelled/);
+    expect(failureReasonFor("expire")).toMatch(/expired/);
+    expect(failureReasonFor("failure")).toMatch(/could not process/);
+  });
+
+  it("falls back to a generic reason for unknown statuses", () => {
+    expect(failureReasonFor(undefined)).toMatch(/declined, cancelled or could not be processed/);
+  });
+});
+
+describe("notificationUrlFor", () => {
+  it("points Midtrans at the webhook of a public HTTPS deployment", () => {
+    expect(notificationUrlFor("https://brew-haven.vercel.app")).toBe(
+      "https://brew-haven.vercel.app/api/webhooks/midtrans"
+    );
+    expect(notificationUrlFor("https://brew-haven.vercel.app/")).toBe(
+      "https://brew-haven.vercel.app/api/webhooks/midtrans"
+    );
+  });
+
+  it("sends no override on a local machine", () => {
+    expect(notificationUrlFor("http://localhost:3000")).toBeNull();
+    expect(notificationUrlFor(undefined)).toBeNull();
   });
 });

@@ -115,6 +115,21 @@ export function ProductForm({
         </span>
       </label>
 
+      <label className="flex items-start gap-3 rounded-xl border border-latte bg-foam/60 px-4 py-3">
+        <input
+          type="checkbox"
+          name="isFeatured"
+          defaultChecked={product?.isFeatured ?? false}
+          className="mt-0.5 h-4 w-4 accent-caramel-dark"
+        />
+        <span>
+          <span className="block text-sm font-medium text-espresso">Feature on the home page</span>
+          <span className="block text-xs text-mocha">
+            Shown in the promotional banner at the top of the menu (up to 3 products).
+          </span>
+        </span>
+      </label>
+
       <div className="sticky bottom-0 -mx-6 -mb-5 flex gap-3 border-t border-latte bg-white px-6 py-4">
         <SubmitButton pendingLabel="Saving…" className={primaryButtonClass}>
           {product ? "Save Changes" : "Add to Menu"}

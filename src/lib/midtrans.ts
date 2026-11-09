@@ -56,6 +56,22 @@ export function mapTransactionStatus(
   }
 }
 
+/** Customer-facing reason for a failed or expired Midtrans transaction status. */
+export function failureReasonFor(status: string | undefined): string {
+  switch (status) {
+    case "deny":
+      return "The payment was declined by the bank or the payment provider's fraud check.";
+    case "cancel":
+      return "The payment was cancelled before it was completed.";
+    case "expire":
+      return "The payment window expired before payment was completed.";
+    case "failure":
+      return "The payment provider could not process the payment.";
+    default:
+      return "The payment was declined, cancelled or could not be processed.";
+  }
+}
+
 export function expectedSignature(
   orderId: string,
   statusCode: string,
@@ -98,15 +114,27 @@ export type SnapInput = {
   finishUrl: string;
 };
 
+/**
+ * Public HTTPS address Midtrans should send this transaction's notification to, or null
+ * on a local machine (Midtrans cannot reach localhost; payment status polling covers it).
+ * Sent per request, so a deployment works without editing the Midtrans dashboard.
+ */
+export function notificationUrlFor(appUrl: string | undefined): string | null {
+  if (!appUrl || !/^https:\/\//i.test(appUrl)) return null;
+  return `${appUrl.replace(/\/+$/, "")}/api/webhooks/midtrans`;
+}
+
 export async function createSnapTransaction(
   input: SnapInput
 ): Promise<{ token: string; redirectUrl: string }> {
+  const notifyUrl = notificationUrlFor(process.env.APP_URL);
   const res = await fetch(SNAP_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
       Authorization: authHeader(),
+      ...(notifyUrl ? { "X-Override-Notification": notifyUrl } : {}),
     },
     body: JSON.stringify({
       transaction_details: { order_id: input.orderId, gross_amount: input.amount },

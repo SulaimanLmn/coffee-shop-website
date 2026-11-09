@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { formatPrice } from "@/lib/format";
 import { inputClass } from "@/components/form-kit";
 
-/** Whole-rupiah price input with a formatted hint ("Rp 28.000") under it. */
+/** Whole-rupiah price input, displayed with thousands dots ("28.000"). */
 export function PriceInput({
   defaultValue,
   invalid,
@@ -15,25 +14,23 @@ export function PriceInput({
   describedBy?: string;
 }) {
   const [value, setValue] = useState(defaultValue === undefined ? "" : String(defaultValue));
-  const amount = /^\d+$/.test(value) ? Number(value) : null;
+  // Display-only thousands separators; the submitted value stays plain digits.
+  const display = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
   return (
     <label className="grid gap-1.5">
       <span className="text-sm font-medium text-espresso">Price (IDR)</span>
+      <input type="hidden" name="price" value={value} />
       <input
-        name="price"
         inputMode="numeric"
-        pattern="[0-9]*"
+        autoComplete="off"
         required
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
+        value={display}
+        onChange={(e) => setValue(e.target.value.replace(/\D/g, "").replace(/^0+(?=\d)/, ""))}
         aria-invalid={invalid || undefined}
-        aria-describedby={`price-hint${describedBy ? ` ${describedBy}` : ""}`}
+        aria-describedby={describedBy}
         className={inputClass}
       />
-      <span id="price-hint" className="text-xs text-mocha">
-        Whole rupiah, no dots.{amount !== null && amount > 0 ? ` = ${formatPrice(amount)}` : ""}
-      </span>
     </label>
   );
 }

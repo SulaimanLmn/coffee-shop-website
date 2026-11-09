@@ -47,5 +47,8 @@ next-env.d.ts
 kilo.json
 AGENTS.md
 CLAUDE.md
+.claude/
+.mcp.json
+implementation.md
 
 uploads/

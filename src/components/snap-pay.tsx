@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 
 declare global {
   interface Window {
@@ -40,6 +40,26 @@ function loadSnap(): Promise<void> {
   });
 }
 
+// Whether the Snap window is open, so SnapGuidePanel can show the test-payment steps.
+let snapOpen = false;
+const snapListeners = new Set<() => void>();
+
+function setSnapOpen(value: boolean) {
+  snapOpen = value;
+  snapListeners.forEach((listener) => listener());
+}
+
+export function useSnapOpen(): boolean {
+  return useSyncExternalStore(
+    (listener) => {
+      snapListeners.add(listener);
+      return () => snapListeners.delete(listener);
+    },
+    () => snapOpen,
+    () => false
+  );
+}
+
 /** Opens the Midtrans Snap popup and routes to the payment result page when it ends. */
 export function useSnapPay() {
   const router = useRouter();
@@ -47,13 +67,22 @@ export function useSnapPay() {
   return useCallback(
     async (token: string, orderId: string) => {
       await loadSnap();
-      const done = () => router.push(`/payment/result?order_id=${encodeURIComponent(orderId)}`);
-      window.snap!.pay(token, {
-        onSuccess: done,
-        onPending: done,
-        onError: done,
-        onClose: done,
-      });
+      const done = () => {
+        setSnapOpen(false);
+        router.push(`/payment/result?order_id=${encodeURIComponent(orderId)}`);
+      };
+      setSnapOpen(true);
+      try {
+        window.snap!.pay(token, {
+          onSuccess: done,
+          onPending: done,
+          onError: done,
+          onClose: done,
+        });
+      } catch (e) {
+        setSnapOpen(false);
+        throw e;
+      }
     },
     [router]
   );

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import {
   cancelTransaction,
   createSnapTransaction,
+  failureReasonFor,
   fetchTransactionStatus,
   mapTransactionStatus,
   parseGross,
@@ -75,7 +76,13 @@ export async function supersedeUnpaidOrders(userId: string) {
   });
   for (const o of stillUnpaid) {
     try {
-      await transitionOrder({ orderId: o.id, to: "CANCELLED", actor: "CUSTOMER", userId });
+      await transitionOrder({
+        orderId: o.id,
+        to: "CANCELLED",
+        actor: "CUSTOMER",
+        userId,
+        reason: "A newer checkout replaced this order before it was paid.",
+      });
     } catch {
       // Raced with another update; nothing to do.
     }
@@ -132,7 +139,7 @@ export async function createOrderAndSnapToken(args: {
       orderId: order.midtransOrderId,
       amount: order.totalAmount,
       items: order.items.map((i) => ({
-        id: i.productId,
+        id: i.productId ?? i.id,
         name: i.productName,
         price: i.price,
         quantity: i.quantity,
@@ -152,6 +159,7 @@ export async function createOrderAndSnapToken(args: {
         paymentStatus: "FAILED",
         orderStatus: "CANCELLED",
         cancelledAt: new Date(),
+        failureReason: "The payment could not be started. Please try again.",
       },
     });
     console.error("Snap transaction failed", error);
@@ -212,6 +220,7 @@ export async function applyMidtransStatus(
           orderStatus: "CANCELLED",
           cancelledAt: new Date(),
           paymentMethod: method ?? undefined,
+          failureReason: failureReasonFor(payload.transaction_status),
         },
       });
     } else if (mapped === "PENDING" && method && !order.paymentMethod) {
@@ -256,10 +265,12 @@ type TransitionArgs = {
   to: OrderStatus;
   actor: Actor;
   userId?: string;
+  /** Recorded as the failure reason when an unpaid order is cancelled. */
+  reason?: string;
 };
 
 /** The one place order status changes happen. Throws OrderError on rule violations. */
-export async function transitionOrder({ orderId, to, actor, userId }: TransitionArgs) {
+export async function transitionOrder({ orderId, to, actor, userId, reason }: TransitionArgs) {
   let midtransIdToCancel: string | null = null;
 
   const updated = await prisma.$transaction(async (tx) => {
@@ -291,6 +302,9 @@ export async function transitionOrder({ orderId, to, actor, userId }: Transition
 
     if (to === "CANCELLED") {
       data.paymentStatus = order.paymentStatus === "PAID" ? "REFUND_DUE" : "FAILED";
+      if (order.paymentStatus === "UNPAID") {
+        data.failureReason = reason ?? "You cancelled this order before paying.";
+      }
       if (order.paymentStatus === "UNPAID" || order.paymentStatus === "PAID") {
         midtransIdToCancel = order.midtransOrderId;
       }

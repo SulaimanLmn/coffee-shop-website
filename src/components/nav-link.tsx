@@ -21,7 +21,7 @@ export function NavLink({
     : pathname === href || pathname.startsWith(href + "/");
 
   const base =
-    "inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition-colors ";
+    "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-colors ";
   const style =
     variant === "cart"
       ? active

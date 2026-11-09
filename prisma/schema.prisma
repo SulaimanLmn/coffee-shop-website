@@ -74,6 +74,8 @@ model Product {
   description String
   price       Int
   isAvailable Boolean     @default(true)
+  /// Shown in the promotional banner on the home page.
+  isFeatured  Boolean     @default(false)
   imageUrl    String
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -95,6 +97,8 @@ model Order {
   orderStatus     OrderStatus   @default(PENDING)
   totalAmount     Int
   snapToken       String?
+  /// Why payment failed or was abandoned; shown on the failed payment page.
+  failureReason   String?
   paidAt          DateTime?
   preparingAt     DateTime?
   readyAt         DateTime?
@@ -113,14 +117,26 @@ model Order {
 model OrderItem {
   id          String  @id @default(cuid())
   orderId     String
-  productId   String
+  /// Null once the product is deleted; productName and price keep the history.
+  productId   String?
   productName String
   quantity    Int
   price       Int
-  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product     Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
+}
+
+/// Uploaded product and profile images. Kept in the database because serverless
+/// hosting has no permanent disk; served by /api/uploads/[name].
+model Upload {
+  name      String   @id
+  mimeType  String
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@map("uploads")
 }

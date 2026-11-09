@@ -9,7 +9,8 @@ import { deleteProductAction, toggleAvailabilityAction } from "@/lib/actions/adm
 import { ConfirmButton } from "@/components/confirm-button";
 import { AvailabilitySwitch } from "@/components/admin/availability-switch";
 import { ProductForm } from "@/components/admin/product-form";
-import { Notice, inputClass, primaryButtonClass } from "@/components/form-kit";
+import { LiveSearch } from "@/components/admin/live-search";
+import { Notice, primaryButtonClass } from "@/components/form-kit";
 import { PageHeader } from "@/components/page-header";
 import { RouteDialog } from "@/components/route-dialog";
 
@@ -70,30 +71,22 @@ export default async function AdminProductsPage({
       {error && !drawerOpen && <Notice kind="error">{error}</Notice>}
 
       <div className="grid gap-3">
-        <form method="get" action="/admin/products" role="search" className="flex flex-wrap items-center gap-2">
-          {view.category && <input type="hidden" name="category" value={view.category} />}
-          {view.avail && <input type="hidden" name="avail" value={view.avail} />}
-          <label className="sr-only" htmlFor="product-search">
-            Search products by name
-          </label>
-          <input
+        <div className="flex flex-wrap items-center gap-2">
+          <LiveSearch
+            action="/admin/products"
             id="product-search"
-            name="q"
-            type="search"
-            defaultValue={view.q}
-            maxLength={100}
+            label="Search products by name"
             placeholder="Search by name"
-            className={`${inputClass} w-64`}
+            q={view.q}
+            keep={{ category: view.category, avail: view.avail }}
+            className="w-64"
           />
-          <button type="submit" className={primaryButtonClass}>
-            Search
-          </button>
           {filtered && (
             <Link href="/admin/products" className="text-sm font-medium text-mocha hover:text-espresso">
               Clear filters
             </Link>
           )}
-        </form>
+        </div>
 
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           <nav aria-label="Filter by category" className="flex flex-wrap gap-2">
@@ -164,6 +157,11 @@ export default async function AdminProductsPage({
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={p.imageUrl} alt="" className="h-10 w-10 rounded-lg bg-foam object-cover" />
                         <span className="font-medium text-espresso">{p.name}</span>
+                        {p.isFeatured && (
+                          <span className="rounded-full bg-foam px-2 py-0.5 text-xs font-medium text-mocha">
+                            Featured
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-2.5 text-mocha">{p.category.name}</td>
@@ -188,28 +186,16 @@ export default async function AdminProductsPage({
                         <form action={deleteProductAction} className="text-right">
                           <input type="hidden" name="id" value={p.id} />
                           <input type="hidden" name="return" value={listHref} />
-                          {inOrders ? (
-                            <>
-                              <button
-                                type="button"
-                                disabled
-                                aria-describedby={`keep-${p.id}`}
-                                className="cursor-not-allowed font-medium text-mocha/60"
-                              >
-                                Delete<span className="sr-only"> {p.name}</span>
-                              </button>
-                              <p id={`keep-${p.id}`} className="mt-0.5 max-w-44 text-xs text-mocha">
-                                In past orders. Switch it off instead.
-                              </p>
-                            </>
-                          ) : (
-                            <ConfirmButton
-                              message={`Delete ${p.name}? This cannot be undone.`}
-                              className="font-medium text-red-700 underline-offset-2 hover:underline"
-                            >
-                              Delete<span className="sr-only"> {p.name}</span>
-                            </ConfirmButton>
-                          )}
+                          <ConfirmButton
+                            message={
+                              inOrders
+                                ? `Delete ${p.name}? It will be removed from the menu. Past orders keep its name and price.`
+                                : `Delete ${p.name}? This cannot be undone.`
+                            }
+                            className="font-medium text-red-700 underline-offset-2 hover:underline"
+                          >
+                            Delete<span className="sr-only"> {p.name}</span>
+                          </ConfirmButton>
                         </form>
                       </div>
                     </td>

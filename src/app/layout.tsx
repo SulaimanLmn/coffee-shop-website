@@ -4,6 +4,7 @@ import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
 import { FlashToast } from "@/components/flash-toast";
 import { Toaster } from "@/components/toaster";
+import { ImageFallback } from "@/components/image-fallback";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"] });
@@ -40,6 +41,7 @@ export default function RootLayout({
           <FlashToast />
         </Suspense>
         <Toaster />
+        <ImageFallback />
       </body>
     </html>
   );

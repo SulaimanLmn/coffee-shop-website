@@ -2,11 +2,14 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import {
   SORT_OPTIONS,
+  listFeatured,
   listProducts,
   parseBrowseParams,
   type BrowseParams,
 } from "@/lib/catalog";
+import { formatPrice } from "@/lib/format";
 import { ProductCard } from "@/components/product-card";
+import { MenuFilters } from "@/components/menu-filters";
 
 export const dynamic = "force-dynamic";
 
@@ -26,9 +29,10 @@ export default async function Home({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = parseBrowseParams(await searchParams);
-  const [categories, products] = await Promise.all([
+  const [categories, products, featured] = await Promise.all([
     prisma.category.findMany({ orderBy: { name: "asc" } }),
     listProducts(params),
+    listFeatured(),
   ]);
   const filtered = !!(params.q || params.category);
 
@@ -41,7 +45,7 @@ export default async function Home({
   return (
     <>
       <section className="bg-espresso text-cream">
-        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1fr_380px] lg:py-20">
           <div className="max-w-xl">
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-caramel-dark">
               Order ahead, pick up fresh
@@ -60,6 +64,46 @@ export default async function Home({
               View the menu
             </a>
           </div>
+
+          {featured.length > 0 && (
+            <aside
+              aria-labelledby="featured-heading"
+              className="rounded-3xl border border-cream/15 bg-cream/5 p-5"
+            >
+              <h2
+                id="featured-heading"
+                className="text-xs font-medium uppercase tracking-[0.18em] text-caramel-dark"
+              >
+                Featured this week
+              </h2>
+              <ul className="mt-4 grid gap-3">
+                {featured.map((p) => (
+                  <li key={p.id}>
+                    <Link
+                      href={`/products/${p.id}`}
+                      className="flex items-center gap-4 rounded-2xl p-2 transition-colors hover:bg-cream/10"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={p.imageUrl}
+                        alt=""
+                        className="h-16 w-16 shrink-0 rounded-xl bg-coffee object-cover"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-display text-lg font-semibold">
+                          {p.name}
+                        </span>
+                        <span className="block text-xs text-cream/70">{p.category.name}</span>
+                      </span>
+                      <span className="font-display font-semibold tabular-nums">
+                        {formatPrice(p.price)}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          )}
         </div>
       </section>
 
@@ -83,44 +127,12 @@ export default async function Home({
           ))}
         </div>
 
-        <form method="get" action="/" className="mt-4 flex flex-wrap items-end gap-3">
-          <input type="hidden" name="category" value={params.category} />
-          <label className="grid gap-1 text-xs font-medium text-mocha">
-            Search
-            <input
-              name="q"
-              defaultValue={params.q}
-              maxLength={100}
-              placeholder="Search by name"
-              className="w-56 rounded-lg border border-latte bg-white px-3 py-2 text-sm text-espresso outline-none focus:border-caramel"
-            />
-          </label>
-          <label className="grid gap-1 text-xs font-medium text-mocha">
-            Sort by
-            <select
-              name="sort"
-              defaultValue={params.sort}
-              className="rounded-lg border border-latte bg-white px-3 py-2 text-sm text-espresso outline-none focus:border-caramel"
-            >
-              {SORT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="submit"
-            className="rounded-full bg-caramel-dark px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-coffee"
-          >
-            Apply
-          </button>
-          {(filtered || params.sort !== "menu") && (
-            <Link href="/#menu" className="py-2 text-sm font-medium text-mocha hover:text-espresso">
-              Clear
-            </Link>
-          )}
-        </form>
+        <MenuFilters
+          q={params.q}
+          category={params.category}
+          sort={params.sort}
+          sortOptions={SORT_OPTIONS}
+        />
 
         <p className="mt-4 text-sm text-mocha" aria-live="polite">
           {products.length} {products.length === 1 ? "item" : "items"}

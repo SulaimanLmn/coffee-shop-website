@@ -61,6 +61,18 @@ export async function listProducts(p: BrowseParams) {
   });
 }
 
+export const MAX_FEATURED = 3;
+
+/** Products the admin marked as featured, for the home page promotional banner. */
+export async function listFeatured() {
+  return prisma.product.findMany({
+    where: { isFeatured: true, isAvailable: true },
+    orderBy: [{ updatedAt: "desc" }],
+    include: { category: true },
+    take: MAX_FEATURED,
+  });
+}
+
 export type Availability = "available" | "unavailable";
 
 export function availability(isAvailable: boolean): Availability {

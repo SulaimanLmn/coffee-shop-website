@@ -121,6 +121,8 @@ describe("validation", () => {
     expect(isValidImageUrl("/api/uploads/" + "a".repeat(32) + ".png")).toBe(true);
     expect(isValidImageUrl("javascript:alert(1)")).toBe(false);
     expect(isValidImageUrl("/api/uploads/../../etc/passwd")).toBe(false);
+    expect(isValidImageUrl("/menu/caffe-latte.jpg")).toBe(true);
+    expect(isValidImageUrl("/menu/../.env")).toBe(false);
   });
   it("parses strict integers and slugs", () => {
     expect(parseIntStrict("12", 1, 100)).toBe(12);

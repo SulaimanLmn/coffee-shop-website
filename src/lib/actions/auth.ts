@@ -24,6 +24,7 @@ import {
   validatePassword,
 } from "@/lib/validation";
 import { saveImage } from "@/lib/uploads";
+import { mailConfigured, sendPasswordResetEmail } from "@/lib/mailer";
 
 const RESET_TTL_MS = 60 * 60_000;
 
@@ -109,29 +110,40 @@ export async function adminLogoutAction() {
   redirect("/admin/login");
 }
 
+/** Stores a single-use reset token (hash only) and returns the raw token for the link. */
+async function issueResetToken(userId: string): Promise<string> {
+  const { raw, hash } = newResetToken();
+  await prisma.passwordResetToken.create({
+    data: { userId, tokenHash: hash, expiresAt: new Date(Date.now() + RESET_TTL_MS) },
+  });
+  return raw;
+}
+
 export async function forgotPasswordAction(formData: FormData) {
   const email = normalizeEmail(formData.get("email"));
   if (!email) redirect("/forgot-password?error=invalid");
 
   const user = await prisma.user.findUnique({ where: { email } });
-  let devLink = "";
-  if (user && user.role === "CUSTOMER") {
-    const { raw, hash } = newResetToken();
-    await prisma.passwordResetToken.create({
-      data: {
-        userId: user.id,
-        tokenHash: hash,
-        expiresAt: new Date(Date.now() + RESET_TTL_MS),
-      },
-    });
-    const origin = process.env.APP_URL ?? "http://localhost:3000";
-    console.log(`[password reset] ${email}: ${origin}/reset-password/${raw}`);
-    if (process.env.NODE_ENV !== "production") devLink = `/reset-password/${raw}`;
+  // Administrator accounts are pre-configured and are never reset from this page.
+  const customer = user && user.role === "CUSTOMER" ? user : null;
+
+  if (!mailConfigured()) {
+    // Demonstration mode (no mail server, e.g. the deployed demo): skip the email step and
+    // open the new-password page straight away. Unregistered emails get an error (Section 3.2).
+    if (!customer) redirect("/forgot-password?error=notfound");
+    const raw = await issueResetToken(customer.id);
+    redirect(`/reset-password/${raw}?demo=1`);
   }
-  // Same response whether or not the account exists (no account enumeration).
-  const q = new URLSearchParams({ sent: "1" });
-  if (devLink) q.set("dev", devLink);
-  redirect(`/forgot-password?${q}`);
+
+  if (customer) {
+    const raw = await issueResetToken(customer.id);
+    const origin = process.env.APP_URL ?? "http://localhost:3000";
+    const link = `${origin}/reset-password/${raw}`;
+    const emailed = await sendPasswordResetEmail(email, customer.fullName, link);
+    if (!emailed) console.log(`[password reset] email to ${email} failed; link: ${link}`);
+  }
+  // With email: the same response whether or not the account exists (no account enumeration).
+  redirect("/forgot-password?sent=1");
 }
 
 export async function resetPasswordAction(formData: FormData) {

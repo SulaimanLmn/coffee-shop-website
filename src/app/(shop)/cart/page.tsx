@@ -8,6 +8,7 @@ import { formatPrice } from "@/lib/format";
 import { pickupSlots } from "@/lib/pickup";
 import { toast } from "@/lib/toast";
 import { useSnapPay } from "@/components/snap-pay";
+import { SandboxPaymentNotice } from "@/components/sandbox-guide";
 import { primaryButtonClass } from "@/components/form-kit";
 
 export default function CartPage() {
@@ -234,7 +235,7 @@ export default function CartPage() {
           >
             {submitting ? "Preparing payment…" : "Checkout"}
           </button>
-          <p className="mt-3 text-center text-xs text-mocha">Secure payment via Midtrans (Sandbox).</p>
+          <SandboxPaymentNotice />
           <Link
             href="/"
             className="mt-4 block text-center text-sm font-medium text-mocha transition-colors hover:text-espresso"

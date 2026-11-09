@@ -1,0 +1,16 @@
+# Files the Vercel CLI must not upload (secrets, local data, tooling notes).
+.env
+.env.*
+!.env.example
+uploads/
+node_modules/
+.next/
+coverage/
+.claude/
+.kilo/
+.kilocode/
+kilo.json
+.mcp.json
+AGENTS.md
+CLAUDE.md
+implementation.md

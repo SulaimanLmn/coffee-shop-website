@@ -5,12 +5,11 @@ import { hashToken } from "@/lib/auth";
 import { resetPasswordAction } from "@/lib/actions/auth";
 import {
   AuthCard,
-  Field,
   Notice,
-  inputClass,
   linkClass,
   primaryButtonClass,
 } from "@/components/form-kit";
+import { PasswordField } from "@/components/password-field";
 
 export const metadata: Metadata = { title: "Choose a new password" };
 export const dynamic = "force-dynamic";
@@ -29,7 +28,7 @@ export default async function ResetPasswordPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const { token } = await params;
-  const { error } = await searchParams;
+  const { error, demo } = await searchParams;
 
   const record = await prisma.passwordResetToken.findUnique({
     where: { tokenHash: hashToken(token) },
@@ -56,28 +55,23 @@ export default async function ResetPasswordPage({
       <form action={resetPasswordAction} className="grid gap-4">
         <input type="hidden" name="token" value={token} />
         {error && errors[error] && <Notice kind="error">{errors[error]}</Notice>}
-        <Field label="New password" hint="At least 8 characters.">
-          <input
-            name="password"
-            type="password"
-            required
-            minLength={8}
-            maxLength={128}
-            autoComplete="new-password"
-            className={inputClass}
-          />
-        </Field>
-        <Field label="Confirm new password">
-          <input
-            name="confirm"
-            type="password"
-            required
-            minLength={8}
-            maxLength={128}
-            autoComplete="new-password"
-            className={inputClass}
-          />
-        </Field>
+        {demo && !error && (
+          <Notice kind="info">
+            Demo mode: no email was sent. Choose your new password below.
+          </Notice>
+        )}
+        <PasswordField
+          name="password"
+          label="New password"
+          autoComplete="new-password"
+          minLength={8}
+        />
+        <PasswordField
+          name="confirm"
+          label="Confirm new password"
+          autoComplete="new-password"
+          minLength={8}
+        />
         <button type="submit" className={primaryButtonClass}>
           Update password
         </button>

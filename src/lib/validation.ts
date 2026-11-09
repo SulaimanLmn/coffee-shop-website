@@ -30,9 +30,10 @@ export function slugify(name: string): string {
     .slice(0, 60);
 }
 
-/** http(s) URL or a locally uploaded file path. */
+/** http(s) URL, a locally uploaded file path, or one of the bundled menu photos. */
 export function isValidImageUrl(url: string): boolean {
   if (/^\/api\/uploads\/[a-f0-9]{32}\.(png|jpg|webp)$/.test(url)) return true;
+  if (/^\/menu\/[a-z0-9-]{1,60}\.(png|jpg|webp)$/.test(url)) return true;
   try {
     const u = new URL(url);
     return (u.protocol === "https:" || u.protocol === "http:") && url.length <= 500;

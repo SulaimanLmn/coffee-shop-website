@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { forgotPasswordAction } from "@/lib/actions/auth";
+import { mailConfigured } from "@/lib/mailer";
 import {
   AuthCard,
   Field,
@@ -12,22 +13,28 @@ import {
 
 export const metadata: Metadata = { title: "Forgot password" };
 
+const errors: Record<string, string> = {
+  invalid: "Please enter a valid email address.",
+  notfound: "No customer account is registered with that email address.",
+};
+
 export default async function ForgotPasswordPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp = await searchParams;
-  // Dev only: there is no email service, so the link is shown on screen.
-  const devLink =
-    process.env.NODE_ENV !== "production" && sp.dev?.startsWith("/reset-password/")
-      ? sp.dev
-      : null;
+  // Without a mail server (the deployed demo) the reset skips the email step.
+  const demo = !mailConfigured();
 
   return (
     <AuthCard
       title="Reset your password"
-      subtitle="Enter your registered email and we will send reset instructions."
+      subtitle={
+        demo
+          ? "Enter the email address of your account to choose a new password."
+          : "Enter your registered email and we will send reset instructions."
+      }
       footer={
         <Link href="/login" className={linkClass}>
           Back to log in
@@ -35,19 +42,16 @@ export default async function ForgotPasswordPage({
       }
     >
       <form action={forgotPasswordAction} className="grid gap-4">
-        {sp.error && <Notice kind="error">Please enter a valid email address.</Notice>}
-        {sp.sent && (
+        {sp.error && errors[sp.error] && <Notice kind="error">{errors[sp.error]}</Notice>}
+        {!demo && sp.sent && (
           <Notice kind="success">
             If that email is registered, password reset instructions have been sent.
           </Notice>
         )}
-        {devLink && (
+        {demo && (
           <Notice kind="info">
-            Development mode (no email service configured):{" "}
-            <Link href={devLink} className={linkClass}>
-              open your reset link
-            </Link>
-            . It is also printed in the server console.
+            Demo mode: this site does not send emails. After you enter your registered email, you
+            can choose a new password straight away.
           </Notice>
         )}
         <Field label="Email">

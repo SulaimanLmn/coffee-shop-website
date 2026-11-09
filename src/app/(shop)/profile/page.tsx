@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
 import { requireUser } from "@/lib/auth";
-import {
-  changePasswordAction,
-  logoutAction,
-  updateProfileAction,
-} from "@/lib/actions/auth";
+import { changePasswordAction, updateProfileAction } from "@/lib/actions/auth";
 import { AvatarPicker } from "@/components/avatar-picker";
-import { Notice, inputClass, primaryButtonClass, secondaryButtonClass } from "@/components/form-kit";
+import { Notice, inputClass, primaryButtonClass } from "@/components/form-kit";
 import { PageHeader } from "@/components/page-header";
 import { PasswordField } from "@/components/password-field";
 import { SubmitButton } from "@/components/submit-button";
@@ -56,16 +52,7 @@ export default async function ProfilePage({
 
   return (
     <div className="mx-auto grid max-w-5xl gap-6 px-4 py-10 sm:px-6">
-      <PageHeader
-        title="My profile"
-        actions={
-          <form action={logoutAction}>
-            <SubmitButton pendingLabel="Logging out…" className={secondaryButtonClass}>
-              Logout
-            </SubmitButton>
-          </form>
-        }
-      />
+      <PageHeader title="My profile" />
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <section aria-labelledby="profile-heading" className="rounded-2xl border border-latte bg-white p-6">

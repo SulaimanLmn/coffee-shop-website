@@ -46,16 +46,32 @@ export function PasswordField({
             onChange={(e) => setLength(e.target.value.length)}
             aria-invalid={invalid || undefined}
             aria-describedby={ids}
-            className={`${inputClass} pr-16 font-normal`}
+            className={`${inputClass} pr-11 font-normal`}
           />
           <button
             type="button"
             aria-pressed={visible}
             onClick={() => setVisible((v) => !v)}
-            className="absolute inset-y-0 right-1 my-1 rounded-md px-2.5 text-xs font-semibold text-caramel-dark hover:text-espresso"
+            className="absolute inset-y-0 right-1 my-1 flex items-center rounded-md px-2.5 text-caramel-dark hover:text-espresso"
           >
-            {visible ? "Hide" : "Show"}
-            <span className="sr-only"> {label.toLowerCase()}</span>
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+              <circle cx="12" cy="12" r="3" />
+              {visible && <path d="M4 4l16 16" />}
+            </svg>
+            <span className="sr-only">
+              {visible ? "Hide" : "Show"} {label.toLowerCase()}
+            </span>
           </button>
         </span>
       </label>

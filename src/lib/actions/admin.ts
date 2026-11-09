@@ -31,6 +31,7 @@ type ProductInput = {
   description: string;
   price: number;
   isAvailable: boolean;
+  isFeatured: boolean;
   categoryId: string;
   imageUrl: string;
 };
@@ -49,6 +50,7 @@ async function readProduct(formData: FormData, retry: string): Promise<ProductIn
   const price = parseIntStrict(formData.get("price"), 1, MAX_PRICE);
   // Unchecked checkboxes are absent from FormData, so absence means off.
   const isAvailable = formData.get("isAvailable") === "on";
+  const isFeatured = formData.get("isFeatured") === "on";
   let imageUrl = str(formData.get("imageUrl"), 500);
 
   if (!name) go(retry, "error", "Product name is required.", "name");
@@ -76,7 +78,7 @@ async function readProduct(formData: FormData, retry: string): Promise<ProductIn
     go(retry, "error", "Image URL must start with http:// or https://.", "imageUrl");
   }
 
-  return { name, description, price: price!, isAvailable, categoryId, imageUrl };
+  return { name, description, price: price!, isAvailable, isFeatured, categoryId, imageUrl };
 }
 
 export async function createProductAction(formData: FormData) {
@@ -135,23 +137,19 @@ export async function deleteProductAction(formData: FormData) {
   await requireAdmin();
   const id = str(formData.get("id"), 40);
   const { list } = productReturns(formData);
+  let name: string;
   try {
-    await prisma.product.delete({ where: { id } });
+    // Past order items keep their own name and price snapshot, so deleting the
+    // product only unlinks them (onDelete: SetNull) and order history stays intact.
+    ({ name } = await prisma.product.delete({ where: { id }, select: { name: true } }));
   } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError) {
-      if (e.code === "P2003") {
-        go(
-          list,
-          "error",
-          "This product appears in past orders and cannot be deleted. Switch it to unavailable instead."
-        );
-      }
-      if (e.code === "P2025") go(list, "error", "That product no longer exists.");
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      go(list, "error", "That product no longer exists.");
     }
     throw e;
   }
   revalidateCatalog();
-  go(list, "notice", "Product deleted.");
+  go(list, "notice", `${name} removed from the menu.`);
 }
 
 // ---------- Categories ----------
